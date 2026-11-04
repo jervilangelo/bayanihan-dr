@@ -1,0 +1,49 @@
+# BayanihanDR dashboard (System C)
+
+The dashboard for BayanihanDR, built with React, Vite, TypeScript, Tailwind CSS, Motion and Lucide. It
+answers two questions for a cooperative administrator: **"Are we protected?"** and **"What do we do next?"**
+
+The current build is the **public demo**. Every number on it is synthetic, it runs on a fixed clock
+(13:52 Philippine time, 4 Nov 2026), and the recovery on the Recovery page is a client-side simulation.
+It makes no network requests and cannot reach AWS or Terraform. The authenticated operations mode
+arrives in Phase 6, behind the same `DashboardProvider` interface.
+
+| Page | What it answers |
+|---|---|
+| Overview | Age of the newest verified recovery point against the 1-hour target, the last 24 hours of recovery points, the backup record by day, the schedule, and recent activity |
+| Backups | Hourly history with filters (all / recovery points / problems), plus each backup's manifest (checksum, test restore, record counts) |
+| Recovery | Preflight checks, recovery-point choice, plan preview, explicit approval, live progress, and the result (simulated) |
+| Activity | Backup, recovery, infrastructure and audit events by day, with a "warnings and errors only" filter |
+| Settings | Recovery targets, schedule and verification, environment, and display preferences (time zone, reduced motion) |
+
+## Run
+
+```powershell
+cd frontend
+npm install
+npm run dev          # http://localhost:5173/bayanihan-dr/
+npm run build        # type-check + production build into dist/
+npm run preview      # serve the build at http://localhost:4173/bayanihan-dr/
+```
+
+## Test
+
+```powershell
+npm test                          # Vitest: data, readiness rules, simulation state machine, provider contract
+npx playwright install chromium   # first time only
+npm run test:e2e                  # Playwright on the production build, desktop and phone
+```
+
+`?simSpeed=<n>` before the `#` speeds up the simulation's playback; the e2e tests use it.
+
+## Structure
+
+```
+src/data/        provider contract (types.ts), demo dataset, readiness rules, simulation, demo provider
+src/lib/         formatting (PHT/UTC), provider and preference context, block-level data loading
+src/components/  shell (sidebar / phone menu), recovery-point strip, UI primitives
+src/pages/       the five pages
+e2e/             Playwright specs
+```
+
+Design decisions: `docs/DECISIONS.md` ADR-006 (hash routing), ADR-007 (design system), ADR-008 (provider and simulation).

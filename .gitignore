@@ -1,0 +1,68 @@
+# ---- secrets & credentials (never commit) ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+.aws/
+credentials
+
+# ---- Terraform ----
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+!*.example.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# ---- database backups & dumps (may contain data) ----
+backups/
+*.dump
+*.sql.gz
+*.backup
+!cooperative-system/docker/*.sql
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+.ruff_cache/
+.mypy_cache/
+
+# ---- Node / frontend ----
+node_modules/
+dist/
+.vite/
+playwright-report/
+test-results/
+.playwright-cli/
+.taste-skill/
+*.tsbuildinfo
+
+# ---- local metadata / OS / editor ----
+*.sqlite3
+*.db
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json

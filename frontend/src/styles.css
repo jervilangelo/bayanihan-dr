@@ -1,0 +1,151 @@
+@import "tailwindcss";
+
+/*
+ * BayanihanDR tokens: TasteSkill "accent ladder" app style mapped onto the blueprint palette.
+ * The full sage hue goes only on small marks (data, the one filled button, the active nav icon);
+ * its pale tints carry areas. Every text pairing below holds 4.5:1 or better.
+ */
+@theme {
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --color-ground: #f8faf9;      /* blueprint background, a step toward the palest sage */
+  --color-surface: #ffffff;
+  --color-raised: #f1f5f3;
+  --color-border: #e1e9e5;
+  --color-rule: #edf2ef;
+  --color-control: #c4d0cb;
+
+  --color-ink: #263b36;         /* blueprint text */
+  --color-muted: #56665f;       /* 5.7:1 on ground */
+
+  --color-accent: #397d6a;      /* blueprint primary, 4.9:1 on white */
+  --color-accent-ink: #1f4a3e;  /* text on the pale tint */
+  --color-tint: #dcede7;        /* blueprint secondary */
+  --color-tint-soft: #edf5f2;
+
+  --color-sky: #7da8c7;         /* blueprint accent: the "now" and window marks */
+  --color-sky-ink: #2f5a78;
+  --color-sky-tint: #e7f0f6;
+
+  --color-gold: #d9a441;        /* blueprint warning, used as a mark, never as text */
+  --color-warn-bg: #fbf3e1;
+  --color-warn-border: #eed39a;
+  --color-warn-ink: #74500f;
+
+  --color-neg: #b4382f;
+  --color-neg-bg: #fbeae8;
+  --color-neg-ink: #7e2018;
+
+  --radius-card: 12px;
+  --radius-control: 8px;
+}
+
+@layer base {
+  html {
+    background: var(--color-ground);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 20px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    margin: 0;
+    background: var(--color-ground);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  ::selection {
+    background: var(--color-tint);
+    color: var(--color-accent-ink);
+  }
+}
+
+@layer components {
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+  .panel {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: var(--radius-control);
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 120ms ease;
+  }
+  .btn:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+  .btn:disabled {
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--color-accent);
+    color: #fff;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-accent-ink);
+  }
+  .btn-primary:disabled {
+    background: var(--color-raised);
+    color: var(--color-muted);
+  }
+  .btn-secondary {
+    background: var(--color-surface);
+    border: 1px solid var(--color-control);
+    color: var(--color-ink);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    border-color: var(--color-muted);
+  }
+  .btn-text {
+    height: auto;
+    padding: 0;
+    color: var(--color-accent-ink);
+    font-weight: 500;
+    text-underline-offset: 3px;
+  }
+  .btn-text:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--color-accent);
+  }
+  .skeleton {
+    display: block;
+    background: var(--color-raised);
+    border-radius: 4px;
+  }
+  /* Diagonal hatch: the mark for "no backup was made" (a missed schedule). */
+  .hatch {
+    background-color: var(--color-surface);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='6'%3E%3Cpath d='M-1 7 7-1' stroke='%2356665f' stroke-width='1.2'/%3E%3C/svg%3E");
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+:root[data-motion="reduce"] *,
+:root[data-motion="reduce"] *::before,
+:root[data-motion="reduce"] *::after {
+  transition-duration: 0.01ms !important;
+  animation-duration: 0.01ms !important;
+}

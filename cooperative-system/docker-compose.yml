@@ -1,0 +1,48 @@
+name: bfc-cms
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cms}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cms-local-dev-only}
+      POSTGRES_DB: ${POSTGRES_DB:-cms}
+    volumes:
+      - cms_pgdata:/var/lib/postgresql/data
+      - ./docker/init-test-db.sql:/docker-entrypoint-initdb.d/10-init-test-db.sql:ro
+    ports:
+      - "127.0.0.1:5432:5432" # loopback only; never exposed to the LAN
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      target: runtime
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-cms}:${POSTGRES_PASSWORD:-cms-local-dev-only}@db:5432/${POSTGRES_DB:-cms}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${CMS_API_PORT:-8000}:8000"
+    restart: unless-stopped
+
+  # Test runner (only started with `--profile test`). Uses the isolated cms_test database.
+  tests:
+    profiles: ["test"]
+    build:
+      context: .
+      target: test
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-cms}:${POSTGRES_PASSWORD:-cms-local-dev-only}@db:5432/cms_test
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  cms_pgdata:
