@@ -6,6 +6,31 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Bluepri
 
 ## [Unreleased]
 
+### Added (Phase 3)
+- `backend/bdr_engine`: the backup engine (System B, part 1).
+  - Snapshot-consistent `pg_dump` with manifests (SHA-256, sizes, record counts, schema revision).
+  - Verification by restoring into a disposable PostgreSQL and checking the data.
+  - Retention with safeguards, an hourly scheduler and a job lock.
+  - An event log and a `status.json` for the dashboard.
+  - A CLI with a fixed command set: `backup`, `verify`, `list`, `prune`, `status`, `schedule`.
+- `cooperative-system/docker-compose.yml`: `backup` profile (`verify-db`, `backup`) and `backup-test` profile.
+- Dashboard local operations mode (`npm run dev:ops`).
+  - A read-only provider for the engine's `status.json`, served only by the dev server and excluded from the
+    Pages build.
+  - A new `pending` backup status.
+  - Verification checks shown in backup details.
+  - Mode-aware Recovery and Overview labels.
+- Tests:
+  - 35 engine tests, 13 of them integration tests against real PostgreSQL. They cover a repeatable restore and
+    detection of corrupted, truncated and tampered backups, missing manifests, failed dumps, unmigrated
+    databases and concurrent jobs.
+  - 5 new frontend unit tests (31 in total).
+- ADR-009 (engine design) and ADR-010 (local schedule and retention).
+
+### Changed (Phase 3)
+- Overview's "Next backup" is now the next top of the hour. "Off-site copies" says "Not set up yet" when there are none.
+- `.github/workflows/deploy-pages.yml` builds and deploys the dashboard to GitHub Pages.
+
 ### Added (Phase 2)
 - `frontend/`: the BayanihanDR dashboard, built with React 19, Vite 8, TypeScript, Tailwind 4, Motion,
   Lucide and React Router 8 (hash routing).

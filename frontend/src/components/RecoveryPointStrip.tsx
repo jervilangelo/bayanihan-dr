@@ -25,7 +25,7 @@ export function RecoveryPointStrip({ backups, now, rpoMinutes }: { backups: Back
     .map((s) => Date.parse(s.hourStart))
     .filter((ms) => ms > start && x(ms) < 88 && Number(f.time(new Date(ms).toISOString(), prefs.timeZone).slice(0, 2)) % 4 === 0)
 
-  const counts = { verified: 0, failed: 0, missed: 0 }
+  const counts = { verified: 0, pending: 0, failed: 0, missed: 0 }
   for (const s of slots) if (s.backup && Date.parse(s.backup.scheduledAt) >= start) counts[s.backup.status]++
 
   return (
@@ -55,7 +55,9 @@ export function RecoveryPointStrip({ backups, now, rpoMinutes }: { backups: Back
               ? 'bg-accent'
               : s.backup.status === 'failed'
                 ? 'bg-surface border-2 border-neg'
-                : 'hatch border border-control'
+                : s.backup.status === 'pending'
+                  ? 'bg-surface border-2 border-sky'
+                  : 'hatch border border-control'
           return (
             <motion.div
               key={s.backup.id}

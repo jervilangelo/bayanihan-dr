@@ -106,6 +106,43 @@ Each decision records its context, the choice, and its consequences. Status valu
 
 ---
 
+## ADR-009 — Backup engine: snapshot-consistent pg_dump, verify by disposable restore, file-based store
+
+- **Status:** Accepted
+- **Date:** 2026-11-04
+- **Context:** Phase 3 needs scheduled backups, metadata, checksums, retention, restore verification and failure
+  handling, validated locally before any AWS work (blueprint §9).
+- **Decision:**
+  - Python engine (`backend/bdr_engine`) in a container based on `postgres:16-alpine`, so `pg_dump` and
+    `pg_restore` always match the server's major version.
+  - Record counts and the schema revision are read in the same exported `REPEATABLE READ` snapshot that
+    `pg_dump --snapshot` uses. The manifest then describes the archive exactly.
+  - A backup becomes `verified` only after the checksum matches, `pg_restore --list` reads it, it restores into a
+    RAM-only disposable PostgreSQL (`verify-db`), and the schema revision and counts match. A checksum alone is not proof.
+  - The store is plain files: one directory per backup ID, an atomic `manifest.json`, `events.jsonl`, and
+    `status.json`. A `flock` stops jobs from running concurrently.
+  - The dashboard reads `status.json` through a dev-server-only route (`npm run dev:ops`). The local provider is
+    read-only and is compiled out of the production (GitHub Pages) build.
+- **Consequences:** No database or service is needed to track backups, and the same files can be uploaded to S3 in
+  Phase 5. Phase 6 replaces the status-file route with an authenticated API.
+
+---
+
+## ADR-010 — Local backup schedule and retention (resolves the local part of OD-4)
+
+- **Status:** Accepted
+- **Date:** 2026-11-04
+- **Decision:**
+  - Hourly on the hour (UTC), and every backup is test-restored immediately.
+  - Retention:
+    - keep everything for 24 h (so failures stay available for diagnosis);
+    - then keep the newest verified backup per UTC day for 7 days;
+    - never delete the newest verified backup or an in-progress one.
+  - Retention runs after each scheduled backup. The CLI `prune` command defaults to a dry run.
+- **Open:** S3 lifecycle and retention, and SSE-S3 versus SSE-KMS. These stay in OD-4 for Phase 5.
+
+---
+
 ## Open decisions (from blueprint v1.0)
 
 | # | Question | Target phase |
@@ -113,6 +150,6 @@ Each decision records its context, the choice, and its consequences. Status valu
 | OD-1 | ~~HashRouter vs static route fallback for GitHub Pages~~ Resolved by ADR-006 | Phase 2 ✔ |
 | OD-2 | Terraform remote-state backend + locking; bootstrap and residual cost | Phase 4 |
 | OD-3 | Recovery access: SSM Session Manager (preferred) vs restricted SSH | Phase 4 |
-| OD-4 | Backup schedule/retention, encryption key management (SSE-S3 vs SSE-KMS), restore-test cadence | Phase 3 |
+| OD-4 | ~~Local schedule/retention, restore-test cadence~~ Resolved by ADR-010. Still open: S3 retention, SSE-S3 vs SSE-KMS | Phase 5 |
 | OD-5 | Local authentication method; how alternate-workstation recovery is started | Phase 6 |
 | OD-6 | Verify current `ap-southeast-1` pricing and final test budget | Phase 5 |

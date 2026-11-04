@@ -6,6 +6,7 @@
   "description": "BayanihanDR dashboard: local operations UI and public GitHub Pages demo",
   "scripts": {
     "dev": "vite",
+    "dev:ops": "vite --mode ops",
     "build": "tsc -b && vite build",
     "preview": "vite preview --strictPort --port 4173",
     "typecheck": "tsc -b",

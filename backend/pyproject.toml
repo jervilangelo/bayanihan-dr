@@ -1,0 +1,15 @@
+[project]
+name = "bdr-engine"
+version = "0.1.0"
+description = "BayanihanDR recovery engine (System B): backups, verification, retention"
+requires-python = ">=3.11"
+dependencies = ["psycopg>=3.2"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 130
+target-version = "py311"

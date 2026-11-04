@@ -185,14 +185,14 @@ function DailyRecord({ backups }: { backups: Backup[] }) {
 function ScheduleCard({ backups, now }: { backups: Backup[]; now: string }) {
   const { prefs } = usePrefs()
   const nowMs = Date.parse(now)
-  const latest = backups[0]
-  const next = latest ? Date.parse(latest.scheduledAt) + 3_600_000 : null
+  // Backups run on the hour (blueprint §5), so the next one is the next top of the hour, whatever happened last.
+  const next = backups.length > 0 ? Math.floor(nowMs / 3_600_000) * 3_600_000 + 3_600_000 : null
   const lastVerified = backups.find((b) => b.status === 'verified')
   const stored = backups.filter((b) => b.offsite === 'stored').length
   const rows: [string, string, string][] = [
     ['Next backup', next ? f.time(new Date(next).toISOString(), prefs.timeZone) : '—', next ? `in ${f.duration(Math.max(0, Math.round((next - nowMs) / 60_000)))}` : ''],
     ['Last test restore', lastVerified?.completedAt ? f.time(lastVerified.completedAt, prefs.timeZone) : '—', lastVerified ? 'Passed' : 'None yet'],
-    ['Off-site copies', `${stored}`, 'Encrypted, outside the office'],
+    ['Off-site copies', `${stored}`, stored > 0 ? 'Encrypted, outside the office' : 'Not set up yet (Amazon S3, Phase 5)'],
   ]
   return (
     <section aria-labelledby="schedule-title">

@@ -10,6 +10,7 @@ import { Link, RouterProvider, createHashRouter } from 'react-router'
 import { Shell } from './components/Shell'
 import { PageHeader } from './components/ui'
 import { createDemoProvider } from './data/demo-provider'
+import { createLocalStatusProvider } from './data/local-status-provider'
 import { AppProviders } from './lib/context'
 import { ActivityPage } from './pages/Activity'
 import { BackupsPage } from './pages/Backups'
@@ -44,9 +45,15 @@ const router = createHashRouter([
   },
 ])
 
-// The public build only ever uses the demo provider. `?simSpeed=` speeds up playback for automated tests.
+// The public (production) build only ever uses the demo provider. Local operations mode exists only on
+// the dev server (`npm run dev:ops`), which serves the backup engine's status.json; `import.meta.env.DEV`
+// is false in production builds, so the local provider is removed from the GitHub Pages bundle.
+// `?simSpeed=` speeds up demo playback for automated tests.
 const speedParam = Number(new URLSearchParams(window.location.search).get('simSpeed'))
-const provider = createDemoProvider({ speed: Number.isFinite(speedParam) && speedParam > 0 ? speedParam : 100 })
+const provider =
+  import.meta.env.DEV && import.meta.env.MODE === 'ops'
+    ? createLocalStatusProvider({ url: `${import.meta.env.BASE_URL}__local/status.json` })
+    : createDemoProvider({ speed: Number.isFinite(speedParam) && speedParam > 0 ? speedParam : 100 })
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

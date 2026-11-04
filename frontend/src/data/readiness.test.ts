@@ -48,7 +48,7 @@ describe('readinessOf', () => {
 
   it('counts outcomes over the window it is given', () => {
     const r = readinessOf([backup(0, 'verified'), backup(1, 'failed'), backup(2, 'missed'), backup(3, 'missed')], NOW, 60)
-    expect(r.counts).toEqual({ verified: 1, failed: 1, missed: 2 })
+    expect(r.counts).toEqual({ verified: 1, pending: 0, failed: 1, missed: 2 })
   })
 })
 

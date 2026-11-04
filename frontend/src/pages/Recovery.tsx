@@ -12,6 +12,46 @@ const loadRecoveryContext = (p: DashboardProvider) => Promise.all([p.getOverview
 const POINTS_SHOWN = 8
 
 export function RecoveryPage() {
+  return useProvider().mode === 'demo' ? <SimulatedRecoveryPage /> : <RecoveryNotYetAvailable />
+}
+
+/** Local operations mode (Phase 3): real recovery orchestration is Phase 6, so nothing can be started here. */
+function RecoveryNotYetAvailable() {
+  const res = useResource(loadRecoveryContext)
+  const [, backups] = res.data ?? [null, null, null]
+  const latest = backups?.find((b) => b.status === 'verified') ?? null
+  const { prefs } = usePrefs()
+  return (
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Recovery"
+        subline="Recovering into AWS is not connected yet. Local operations mode can show which backups are proven restorable, but it cannot start a recovery."
+      />
+      {res.error && <BlockError what="the recovery points" onRetry={res.retry} />}
+      <section className="panel flex flex-col gap-3 p-6" aria-labelledby="rec-unavail">
+        <h2 id="rec-unavail" className="text-[18px] leading-6 font-semibold">
+          Recovery orchestration arrives in Phase 6
+        </h2>
+        <p className="max-w-[62ch] text-[14px] leading-[22px] text-muted">
+          Every backup is already restored into a disposable database to prove it works. Starting a real recovery needs the AWS
+          recovery environment (Phases 4–5) and an authenticated job runner (Phase 6).
+        </p>
+        <p className="text-[14px] text-ink">
+          {latest
+            ? `Newest verified recovery point: ${f.dateTime(latest.scheduledAt, prefs.timeZone)}.`
+            : res.loading
+              ? 'Checking recovery points…'
+              : 'There is no verified recovery point yet.'}
+        </p>
+        <Link to="/backups" className="btn btn-text self-start">
+          Review backups
+        </Link>
+      </section>
+    </div>
+  )
+}
+
+function SimulatedRecoveryPage() {
   const provider = useProvider()
   const res = useResource(loadRecoveryContext)
   const [params] = useSearchParams()

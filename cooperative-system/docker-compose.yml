@@ -44,5 +44,60 @@ services:
       db:
         condition: service_healthy
 
+  # ---- BayanihanDR backup engine (System B, Phase 3). Started with `--profile backup`. ----
+
+  # Disposable PostgreSQL used only to prove backups restore. Data lives in RAM and vanishes on stop.
+  verify-db:
+    profiles: ["backup", "backup-test"]
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: ${BDR_VERIFY_PASSWORD:-verify-local-dev-only}
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  # Hourly backup -> verify -> retention -> status.json. Archives go to <repo>/backups (git-ignored).
+  backup:
+    profiles: ["backup"]
+    build:
+      context: ../backend
+      target: runtime
+    environment:
+      BDR_SOURCE_HOST: db
+      BDR_SOURCE_USER: ${POSTGRES_USER:-cms}
+      BDR_SOURCE_PASSWORD: ${POSTGRES_PASSWORD:-cms-local-dev-only}
+      BDR_SOURCE_DB: ${POSTGRES_DB:-cms}
+      BDR_VERIFY_HOST: verify-db
+      BDR_VERIFY_USER: postgres
+      BDR_VERIFY_PASSWORD: ${BDR_VERIFY_PASSWORD:-verify-local-dev-only}
+      BDR_INTERVAL_MINUTES: ${BDR_INTERVAL_MINUTES:-60}
+    volumes:
+      - ../backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+      verify-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Engine test suite against the disposable verify-db (never touches the CMS database).
+  backup-tests:
+    profiles: ["backup-test"]
+    build:
+      context: ../backend
+      target: test
+    environment:
+      BDR_TEST_PG_HOST: verify-db
+      BDR_TEST_PG_USER: postgres
+      BDR_TEST_PG_PASSWORD: ${BDR_VERIFY_PASSWORD:-verify-local-dev-only}
+    depends_on:
+      verify-db:
+        condition: service_healthy
+
 volumes:
   cms_pgdata:

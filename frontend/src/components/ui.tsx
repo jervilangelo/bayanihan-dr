@@ -57,6 +57,7 @@ export function SectionTitle({ children, aside, id }: { children: ReactNode; asi
 
 const BACKUP_PILL: Record<BackupStatus, { label: string; cls: string }> = {
   verified: { label: 'Verified', cls: 'bg-tint text-accent-ink' },
+  pending: { label: 'Verifying', cls: 'bg-sky-tint text-sky-ink' },
   failed: { label: 'Rejected', cls: 'bg-neg-bg text-neg-ink' },
   missed: { label: 'Missed', cls: 'bg-raised text-muted' },
 }

@@ -7,7 +7,7 @@ const HOUR = 3_600_000
  * recovery point (blueprint §9: never mark unverified backups as protected).
  */
 export function readinessOf(backups: Backup[], now: Date, rpoTargetMinutes: number): Readiness {
-  const counts = { verified: 0, failed: 0, missed: 0 }
+  const counts = { verified: 0, pending: 0, failed: 0, missed: 0 }
   for (const b of backups) counts[b.status]++
 
   const latestVerified =

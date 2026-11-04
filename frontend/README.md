@@ -22,6 +22,7 @@ arrives in Phase 6, behind the same `DashboardProvider` interface.
 cd frontend
 npm install
 npm run dev          # http://localhost:5173/bayanihan-dr/
+npm run dev:ops      # local operations mode: real backups from ../backups/status.json (read-only, dev server only)
 npm run build        # type-check + production build into dist/
 npm run preview      # serve the build at http://localhost:4173/bayanihan-dr/
 ```

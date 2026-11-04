@@ -3,7 +3,7 @@ import { Fragment, useState } from 'react'
 import { Link } from 'react-router'
 import { BackupPill, BlockError, Loading, PageHeader, Skeleton, Stagger, StaggerItem } from '../components/ui'
 import type { Backup, DashboardProvider } from '../data/types'
-import { usePrefs, useResource } from '../lib/context'
+import { useProvider, usePrefs, useResource } from '../lib/context'
 import * as f from '../lib/format'
 
 type Tab = 'all' | 'points' | 'problems'
@@ -12,11 +12,12 @@ const PAGE = 24
 
 export function BackupsPage() {
   const res = useResource(loadBackups)
+  const demo = useProvider().mode === 'demo'
   const [tab, setTab] = useState<Tab>('all')
   const [shown, setShown] = useState(PAGE)
   const all = res.data ?? []
   const points = all.filter((b) => b.status === 'verified')
-  const problems = all.filter((b) => b.status !== 'verified')
+  const problems = all.filter((b) => b.status === 'failed' || b.status === 'missed')
   const rows = tab === 'all' ? all : tab === 'points' ? points : problems
   const tabs: { id: Tab; label: string; n: number }[] = [
     { id: 'all', label: 'All backups', n: all.length },
@@ -30,7 +31,7 @@ export function BackupsPage() {
         title="Backups"
         subline={
           res.data
-            ? `${all.length} hourly backups in the last 72 hours. ${points.length} passed both the checksum and a test restore and can be used to recover.`
+            ? `${all.length} ${demo ? 'hourly backups in the last 72 hours' : 'backups kept on this computer'}. ${points.length} passed both the checksum and a test restore and can be used to recover.`
             : 'Loading the backup history…'
         }
       />
@@ -194,6 +195,7 @@ function BackupTable({ rows }: { rows: Backup[] }) {
 
 function Manifest({ b }: { b: Backup }) {
   const { prefs } = usePrefs()
+  const provider = useProvider()
   const rows: [string, string][] = [
     ['Backup ID', b.id],
     ['Completed', b.completedAt ? f.dateTime(b.completedAt, prefs.timeZone) : '—'],
@@ -217,7 +219,22 @@ function Manifest({ b }: { b: Backup }) {
           </Fragment>
         ))}
       </dl>
-      <p className="mt-3 text-[12px] text-muted">Sample manifest from the demo dataset, not a real backup.</p>
+      {b.checks && b.checks.length > 0 && (
+        <ul className="mt-3 flex flex-col gap-1 border-t border-rule pt-3 text-[13px]" aria-label="Verification checks">
+          {b.checks.map((c) => (
+            <li key={c.name} className="flex gap-2">
+              <span className={c.ok ? 'text-accent-ink' : 'text-neg-ink'} aria-hidden="true">{c.ok ? '✓' : '✕'}</span>
+              <span className="text-ink">
+                <span className="sr-only">{c.ok ? 'Passed: ' : 'Failed: '}</span>
+                {c.detail}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="mt-3 text-[12px] text-muted">
+        {provider.mode === 'demo' ? 'Sample manifest from the demo dataset, not a real backup.' : 'Manifest written by the local backup engine.'}
+      </p>
     </div>
   )
 }

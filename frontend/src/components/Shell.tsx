@@ -65,7 +65,11 @@ function ModeNote() {
     <div className="rounded-lg border border-warn-border bg-warn-bg px-3 py-2.5 text-[12px] leading-[18px] text-warn-ink">
       <span className="font-semibold">Demo mode.</span> Simulated data on a fixed clock. Nothing here connects to AWS.
     </div>
-  ) : null
+  ) : (
+    <div className="rounded-lg border border-rule bg-sky-tint px-3 py-2.5 text-[12px] leading-[18px] text-sky-ink">
+      <span className="font-semibold">Local operations, read-only.</span> Real backups from this computer. Nothing here connects to AWS.
+    </div>
+  )
 }
 
 export function Shell() {

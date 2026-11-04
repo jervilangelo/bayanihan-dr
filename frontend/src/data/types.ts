@@ -5,7 +5,8 @@
  * and the future authenticated operations provider (Phase 6) are interchangeable (blueprint §6.3).
  */
 
-export type BackupStatus = 'verified' | 'failed' | 'missed'
+/** `pending`: the backup exists but has not passed verification yet, so it is never a recovery point. */
+export type BackupStatus = 'verified' | 'pending' | 'failed' | 'missed'
 
 export interface RecordCounts {
   farmers: number
@@ -27,6 +28,17 @@ export interface Backup {
   records?: RecordCounts
   failureReason?: string
   schemaRevision: string
+  /** Operational mode only: how the backup was started and what verification checked. */
+  trigger?: 'scheduled' | 'manual' | 'unknown'
+  verifiedAt?: string | null
+  restoreSeconds?: number | null
+  checks?: VerificationCheck[]
+}
+
+export interface VerificationCheck {
+  name: string
+  ok: boolean
+  detail: string
 }
 
 export type ReadinessState = 'protected' | 'outside-target' | 'no-recovery-point'
@@ -36,7 +48,7 @@ export interface Readiness {
   latestVerified: Backup | null
   recoveryPointAgeMinutes: number | null
   rpoTargetMinutes: number
-  counts: { verified: number; failed: number; missed: number }
+  counts: Record<BackupStatus, number>
 }
 
 export interface PrimaryServer {
@@ -128,6 +140,8 @@ export type ProviderErrorCode =
   | 'unknown-recovery-point'
   | 'recovery-point-not-verified'
   | 'unknown-job'
+  | 'recovery-unavailable'
+  | 'status-unavailable'
 
 export class ProviderError extends Error {
   readonly code: ProviderErrorCode
