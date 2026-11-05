@@ -1,6 +1,6 @@
 # The engine needs pg_dump/pg_restore of the SAME major version as the CMS database (PostgreSQL 16),
 # so it is built on the official postgres image rather than python:slim.
-FROM postgres:16-alpine AS runtime
+FROM postgres:18-alpine AS runtime
 RUN apk add --no-cache python3 py3-psycopg py3-boto3
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 BDR_BACKUP_DIR=/backups
 WORKDIR /srv/engine
