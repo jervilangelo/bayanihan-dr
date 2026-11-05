@@ -6,6 +6,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Bluepri
 
 ## [Unreleased]
 
+### Added (Phase 7): disaster drill and recovery test report
+- `docs/evidence/phase7-test-plan.md`: scenario, procedure, measurement boundaries and pass criteria, written
+  before the drill.
+- `docs/evidence/phase7-disaster-drill.md`: **PASS, 10 of 10 criteria.**
+  - Primary stopped; recovered from a fresh clone of the repository acting as the alternate workstation.
+  - **RTO 5 min 29 s**, independently verified through an SSM port forward; **RPO 26 s**.
+  - The marker before the backup survived and the marker after it was lost, as the RPO predicts.
+  - A corrupted off-site backup was refused at the checksum.
+  - Teardown left nothing behind; cost about USD 0.007.
+  - Limitations stated, chief among them that off-site upload is still manual, so the real RPO depends on the operator.
+
 ### Added (Phase 6): recovery orchestration and the first real drill
 - `backend/bdr_runner`: the authenticated local job runner.
   - FastAPI on 127.0.0.1, bearer token, Host and Origin checks.
