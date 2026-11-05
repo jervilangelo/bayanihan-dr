@@ -13,6 +13,7 @@ import sys
 from .config import ConfigError, Settings
 from .jobs import backup_and_verify, prune, write_status
 from .manifest import is_backup_id
+from .offsite import OffsiteError, default_client, upload_backup
 from .scheduler import run_forever
 from .store import BackupStore, EngineBusy
 from .verify import VerifyError, verify_backup
@@ -30,6 +31,9 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("list", help="list backups and their state")
     p = sub.add_parser("prune", help="show (or with --apply, perform) retention deletions")
     p.add_argument("--apply", action="store_true")
+    u = sub.add_parser("upload", help="copy verified backups to the off-site S3 bucket")
+    u.add_argument("backup_id", nargs="?")
+    u.add_argument("--all", action="store_true", help="every verified backup not yet stored off-site")
     sub.add_parser("status", help="write status.json for the dashboard")
     s = sub.add_parser("schedule", help="run the scheduler until stopped")
     s.add_argument("--run-now", action="store_true", help="also back up immediately on start")
@@ -81,6 +85,31 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"{d.backup_id}  {'keep  ' if d.keep else ('DELETE' if args.apply else 'would delete')}  {d.reason}")
             write_status(settings, store)
             return 0
+        if args.command == "upload":
+            if args.all == bool(args.backup_id):
+                parser.error("give one backup ID or --all")
+            if args.backup_id and not is_backup_id(args.backup_id):
+                parser.error("backup IDs look like 20261104T070000Z")
+            if not settings.offsite_bucket:
+                print("off-site upload is not configured (BDR_OFFSITE_BUCKET)", file=sys.stderr)
+                return 2
+            client = default_client(settings.aws_region)
+            failures = 0
+            with store.lock():
+                ids = (
+                    [e.backup_id for e in store.entries() if e.manifest and e.manifest["status"] == "verified" and e.manifest["offsite"] != "stored"]
+                    if args.all
+                    else [args.backup_id]
+                )
+                for backup_id in ids:
+                    try:
+                        m = upload_backup(store, backup_id, bucket=settings.offsite_bucket, prefix=settings.offsite_prefix, client=client, actor=ACTOR)
+                        print(f"{backup_id}  stored  s3://{settings.offsite_bucket}/{m['offsite_detail']['key']}")
+                    except OffsiteError as e:
+                        print(f"{backup_id}  not uploaded  {e}")
+                        failures += 1
+            write_status(settings, store)
+            return 0 if failures == 0 else 1
         if args.command == "status":
             status = write_status(settings, store)
             print(json.dumps({k: status[k] for k in ("generatedAt", "primary")} | {"backups": len(status["backups"])}, indent=2))

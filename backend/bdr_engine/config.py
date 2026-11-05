@@ -60,6 +60,9 @@ class Settings:
     retention: RetentionPolicy = RetentionPolicy()
     dump_timeout_seconds: int = 900
     restore_timeout_seconds: int = 900
+    offsite_bucket: str | None = None
+    offsite_prefix: str = "backups/"
+    aws_region: str = "ap-southeast-1"
     primary_name: str = "BFC office server"
     primary_location: str = "Naga City office"
 
@@ -110,4 +113,7 @@ class Settings:
             ),
             dump_timeout_seconds=num("BDR_DUMP_TIMEOUT_SECONDS", 900),
             restore_timeout_seconds=num("BDR_RESTORE_TIMEOUT_SECONDS", 900),
+            offsite_bucket=env.get("BDR_OFFSITE_BUCKET", "").strip() or None,
+            offsite_prefix=env.get("BDR_OFFSITE_PREFIX", "").strip() or "backups/",
+            aws_region=env.get("AWS_REGION", "").strip() or "ap-southeast-1",
         )

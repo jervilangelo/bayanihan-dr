@@ -6,6 +6,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Bluepri
 
 ## [Unreleased]
 
+### Added (Phase 5): first AWS deployment, approved by the project owner
+- Applied `terraform/bootstrap`: the state bucket, 7 resources. Its state was then migrated into the bucket.
+- Applied `terraform/environments/recovery` in standby, 13 resources: backup bucket, recovery-host role,
+  log group, and a USD 10/month AWS Budgets alert. No EC2 or VPC.
+- Applied the upload-only `bdr-recovery-backup-writer` role (2 resources).
+- `bdr_engine upload`: copies only verified backups off-site, with S3-checked SHA-256 and the version ID
+  recorded; failures are recorded as rejected. 6 new tests (41 in total).
+- Compose passes `BDR_OFFSITE_BUCKET` and short-lived AWS credentials through to the backup service; the image
+  adds boto3.
+- Evidence (`docs/evidence/phase5-deployment.md`): pricing checked with the AWS Pricing API, guardrails checked
+  with the IAM simulator, an inventory verified with the AWS CLI, and two backups uploaded and read back
+  (SHA-256 and `pg_restore` OK).
+- ADR-012 accepted (SSE-S3). ADR-013 (off-site upload design).
+
 ### Added (Phase 4)
 - `terraform/`: AWS infrastructure code. **Nothing is applied.**
   - Modules: `networking`, `compute`, `storage`, `identity`, `monitoring`.

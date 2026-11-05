@@ -8,6 +8,9 @@ terraform {
     }
   }
 
-  # Deliberately local state: this configuration creates the remote state bucket itself. Its state file is
-  # tiny, holds no secrets, and is kept by the operator outside git (*.tfstate is git-ignored).
+  # Chicken-and-egg: the first apply runs with local state (comment out this block), because this
+  # configuration creates the state bucket. The state is then migrated into the bucket it created, so no
+  # recovery step depends on the operator's laptop surviving the disaster:
+  #   terraform init -migrate-state -backend-config=../environments/recovery/backend.hcl -backend-config="key=bootstrap/terraform.tfstate"
+  backend "s3" {}
 }

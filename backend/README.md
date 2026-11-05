@@ -46,6 +46,18 @@ docker compose --profile backup run --rm -T backup prune          # dry run; add
 docker compose --profile backup-test run --rm -T backup-tests     # engine test suite
 ```
 
+### Off-site copies (Phase 5)
+
+```bash
+# 1-hour credentials for the upload-only role, exported into this shell only (never written to a file)
+eval "$(aws configure export-credentials --profile bayanihan-dr-writer --format env-no-export | sed 's/^/export /')"
+BDR_OFFSITE_BUCKET=<backup bucket> docker compose --profile backup run --rm -T backup upload --all
+```
+
+`upload` sends only `verified` backups. It sends the archive first, then the manifest, each with a SHA-256 that S3
+checks on arrival. The manifest then records `offsite: stored` with the S3 version ID; a failure is recorded as
+`rejected`. The writer role can add objects but cannot list, read or delete them.
+
 Backups are written to `<repo>/backups/`, which is git-ignored and never committed. To see them in the dashboard,
 run `npm run dev:ops` in `frontend/`.
 
@@ -65,10 +77,10 @@ Passwords are only read from the environment, and they reach `pg_dump` and `pg_r
 They never appear on a command line. The CLI accepts a fixed set of commands; none of them take SQL, shell commands
 or file paths.
 
-## Limits (Phase 3)
+## Limits
 
-- Backups live on the same machine as the primary. Off-site copies (S3, encrypted) arrive in Phase 5. Until then this
-  protects against corruption and bad changes, not against losing the office.
+- Off-site copies are made manually with `upload --all` (see above). The scheduler does not upload unattended yet:
+  that needs long-lived workload credentials (Phase 6).
 - A manifest is trusted as written. Someone who can rewrite both the archive and its manifest can forge a backup.
   S3 Object Lock or signed manifests are possible later hardening.
 - The engine image runs as the `postgres` user (uid 70). On a Linux host, `backups/` must be writable by that UID.

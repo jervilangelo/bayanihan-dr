@@ -4,6 +4,7 @@ This folder holds the AWS infrastructure that BayanihanDR recovers into (bluepri
 (Singapore).
 
 > **Phase 4 status:** the code is written, formatted, validated, linted, scanned and tested on a mocked provider.
+> **Phase 5:** the state bucket and the standby setup are applied (see [docs/evidence/phase5-deployment.md](../docs/evidence/phase5-deployment.md)).
 > Real read-only plans have been reviewed: 12 resources in standby, 24 in a drill (see
 > [docs/evidence/phase4-plan-review.md](../docs/evidence/phase4-plan-review.md)). **Nothing has been applied.**
 > `apply` happens only in Phase 5, after explicit approval.
@@ -54,20 +55,21 @@ Setting `recovery_enabled` back to `false` and applying removes the compute and 
 
 Not used at all: NAT Gateway, RDS, load balancers, EKS, Elastic IPs, SSH key pairs, IAM users and access keys.
 
-## Rough drill cost (approximate, unverified)
+## Drill cost (prices verified 2026-11-05)
 
-These are approximate on-demand list prices for ap-southeast-1, written down for planning only. The pricing tool was
-unavailable this session. **Verify them against current AWS pricing before any apply (OD-6, Phase 5).**
+Prices are on-demand list prices for ap-southeast-1 from the AWS Pricing API, checked on 2026-11-05.
 
-| Item | Approx. rate | 4-hour drill |
+| Item | Price | 4-hour drill |
 |---|---|---|
-| EC2 t3.small | ~USD 0.026/h | ~USD 0.11 |
-| Public IPv4 address | USD 0.005/h | ~USD 0.02 |
-| EBS gp3 20 GiB | ~USD 0.096/GiB-month | ~USD 0.01 |
-| S3, CloudWatch, requests, data transfer | small | cents |
+| EC2 t3.small | USD 0.0264/h | USD 0.11 |
+| Public IPv4 address | USD 0.005/h | USD 0.02 |
+| EBS gp3 20 GiB | USD 0.096/GB-month | under USD 0.01 |
+| CloudWatch status alarm | USD 0.10/alarm-month (prorated) | under USD 0.01 |
+| S3 Standard | USD 0.025/GB-month | cents |
 
-A drill should cost well under USD 1 (about PHP 60), far inside the PHP 300–500 planning budget. Most of the risk
-comes from forgetting to switch the drill off; the budget alert and the `terminate` shutdown behaviour help with that.
+A drill costs about USD 0.15 (around PHP 9). Standby costs well under USD 0.10 a month for small synthetic backups.
+Both are far inside the PHP 300–500 planning budget. Most of the risk comes from forgetting to switch a drill off;
+the budget alert and the `terminate` shutdown behaviour help with that.
 
 ## Checks run in Phase 4
 

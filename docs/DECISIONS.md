@@ -166,7 +166,7 @@ Each decision records its context, the choice, and its consequences. Status valu
 
 ## ADR-012 — Encryption and logging trade-offs accepted for cost (proposes the OD-4 encryption answer)
 
-- **Status:** Proposed. Confirm at the Phase 5 apply review.
+- **Status:** Accepted by the project owner, 2026-11-05 (Phase 5 apply review).
 - **Date:** 2026-11-05
 - **Context:** Trivy flags SSE-S3 instead of a customer managed KMS key (AWS-0132, HIGH), log groups without
   a CMK (AWS-0017, LOW) and S3 buckets without access logging (AWS-0089, LOW).
@@ -182,6 +182,23 @@ Each decision records its context, the choice, and its consequences. Status valu
 
 ---
 
+## ADR-013 — Off-site upload with an upload-only role and short-lived credentials
+
+- **Status:** Accepted
+- **Date:** 2026-11-05
+- **Decision:**
+  - The engine uploads only verified backups, archive first and then manifest, each with `ChecksumSHA256` so S3
+    rejects corrupted transfers. Objects go under `backups/<id>/` in the versioned SSE-S3 bucket.
+  - It authenticates as `bdr-recovery-backup-writer`. That role allows `s3:PutObject` on `backups/*` only, and
+    only the operator SSO role may assume it. Credentials last 1 hour and are passed through the environment,
+    never stored.
+  - Read-back is verified with the operator role: download, SHA-256 against both manifests, `pg_restore --list`.
+- **Consequences:** a compromised office server cannot list, read or delete off-site backups, and versioning keeps
+  any overwritten object. Unattended hourly uploads need longer-lived workload credentials (IAM Roles Anywhere
+  or similar), which is deferred to Phase 6.
+
+---
+
 ## Open decisions (from blueprint v1.0)
 
 | # | Question | Target phase |
@@ -189,6 +206,6 @@ Each decision records its context, the choice, and its consequences. Status valu
 | OD-1 | ~~HashRouter vs static route fallback for GitHub Pages~~ Resolved by ADR-006 | Phase 2 ✔ |
 | OD-2 | ~~Terraform remote-state backend + locking~~ Resolved by ADR-011 | Phase 4 ✔ |
 | OD-3 | ~~Recovery access: SSM vs SSH~~ Resolved by ADR-011 (SSM) | Phase 4 ✔ |
-| OD-4 | ~~Local schedule/retention, restore-test cadence~~ Resolved by ADR-010. S3 retention (30 d / 7 d noncurrent) in the storage module; SSE-S3 proposed in ADR-012, confirm at apply review | Phase 5 |
+| OD-4 | ~~Local schedule/retention, restore-test cadence~~ Resolved by ADR-010. S3 retention (30 d / 7 d noncurrent) in the storage module; SSE-S3 accepted (ADR-012) | Phase 5 ✔ |
 | OD-5 | Local authentication method; how alternate-workstation recovery is started | Phase 6 |
 | OD-6 | Verify current `ap-southeast-1` pricing and final test budget | Phase 5 |

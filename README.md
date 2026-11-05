@@ -5,8 +5,8 @@ typhoon takes the fictional Bicol Farmers Cooperative's on-premises server offli
 Cooperative Management System in AWS (`ap-southeast-1`) from verified, encrypted off-site backups, and measures
 how long recovery actually took.
 
-> Status: **Phases 1–4 of 10 complete (local CMS, dashboard, verified local backups, Terraform code).** No AWS resources exist yet; nothing has been applied. Recovery metrics will be published only
-> after a real, measured drill. Nothing here is a claimed result yet.
+> Status: **Phases 1–5 of 10 complete.** The AWS standby environment is deployed (encrypted backup bucket, IAM, logs, budget alert; no EC2 running), and verified backups are stored off-site and read back. Recovery metrics will be published only after a real,
+> measured drill. Nothing here is a claimed result yet.
 
 | System | Folder | Status |
 |---|---|---|

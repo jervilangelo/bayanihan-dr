@@ -76,6 +76,13 @@ services:
       BDR_VERIFY_USER: postgres
       BDR_VERIFY_PASSWORD: ${BDR_VERIFY_PASSWORD:-verify-local-dev-only}
       BDR_INTERVAL_MINUTES: ${BDR_INTERVAL_MINUTES:-60}
+      # Off-site copies (Phase 5). Unset bucket = disabled. Credentials are short-lived (1 h) role credentials
+      # passed through from the operator's shell for the run; they are never written to a file.
+      BDR_OFFSITE_BUCKET: ${BDR_OFFSITE_BUCKET:-}
+      AWS_REGION: ap-southeast-1
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
     volumes:
       - ../backups:/backups
     depends_on:
