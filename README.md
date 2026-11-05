@@ -1,4 +1,3 @@
-﻿# BayanihanDR
 
 ![BayanihanDR: Disaster Recovery Through Infrastructure as Code](frontend/src/bayanihan-showcase.jpg)
 
