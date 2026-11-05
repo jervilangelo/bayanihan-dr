@@ -4,6 +4,8 @@ import { RecoveryPointStrip } from '../components/RecoveryPointStrip'
 import { BlockError, Loading, PageHeader, SectionTitle, SeverityDot, Skeleton, Stagger, StaggerItem } from '../components/ui'
 import type { ActivityEvent, Backup, DashboardProvider, Overview as OverviewData } from '../data/types'
 import { usePrefs, useResource } from '../lib/context'
+import { RecordedDrills } from '../components/RecordedDrills'
+import { LATEST_DRILL } from '../data/recorded-drills'
 import * as f from '../lib/format'
 
 const loadOverview = (p: DashboardProvider) => Promise.all([p.getOverview(), p.listBackups(), p.listActivity()])
@@ -77,7 +79,7 @@ export function OverviewPage() {
               <section aria-labelledby="figures-title">
                 <h2 id="figures-title" className="sr-only">Key figures</h2>
                 <dl className="panel grid grid-cols-2 sm:grid-cols-4">
-                  <Figure label="Recovery time target" value={f.duration(overview.targets.rtoMinutes)} note="Not yet measured in a drill" />
+                  <Figure label="Recovery time target" value={f.duration(overview.targets.rtoMinutes)} note={`Measured ${f.clock(Math.round(LATEST_DRILL.rtoSeconds))} in a real drill`} />
                   <Figure label="Data-loss target" value={f.duration(overview.targets.rpoMinutes)} note="Hourly backups" />
                   <Figure
                     label="Verified, last 72 h"
@@ -96,6 +98,10 @@ export function OverviewPage() {
 
             <StaggerItem>
               <DailyRecord backups={backups} />
+            </StaggerItem>
+
+            <StaggerItem>
+              <RecordedDrills />
             </StaggerItem>
           </div>
 

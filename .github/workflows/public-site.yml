@@ -1,0 +1,38 @@
+# Checks the LIVE GitHub Pages site after every deployment and once a week (blueprint Phase 9):
+# direct links and refreshes, recorded results, the simulation, no AWS or other external requests, no leaked
+# operational code. Needs no secrets and no AWS: the public site must work while AWS is offline.
+name: Public site check
+
+on:
+  workflow_run:
+    workflows: ["Deploy dashboard to GitHub Pages"]
+    types: [completed]
+  schedule:
+    - cron: "17 2 * * 1" # Mondays 02:17 UTC (10:17 Philippine time)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-site:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Wait for the new deployment to be served
+        run: sleep 30
+      - run: npm run test:public

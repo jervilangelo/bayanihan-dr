@@ -6,6 +6,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Bluepri
 
 ## [Unreleased]
 
+### Added (Phase 9): public site with recorded results
+- Overview now shows **"Measured in real AWS drills"**, with sanitized results from the Phase 7 and Phase 6 drills:
+  RTO and RPO against targets, a breakdown of where the recovery time went, records restored, verification
+  method, compute cost and links to the evidence. It is labelled "Recorded results, not simulated". The RTO figure
+  now reads "Measured 05:29 in a real drill".
+- `src/data/recorded-drills.ts` with a test that blocks account IDs, IPs, instance IDs, bucket names, e-mails and
+  ARNs, and checks that stage durations add up to each measured RTO.
+- `e2e-public/` + `playwright.public.config.ts` (`npm run test:public`): Playwright against the **live** site.
+  Checks direct links and refresh on every page, no external or AWS requests, no HTTP errors or console errors,
+  the published results, the full simulation, and that no operational code is in the bundle.
+- `.github/workflows/public-site.yml` runs those checks after each Pages deployment and weekly.
+
 ### Added (Phase 8): CI/CD
 - `.github/workflows/ci.yml` runs on every push and pull request.
   - **Dashboard:** typecheck, 36 unit tests, production build, 48 Playwright e2e tests, and a check that no

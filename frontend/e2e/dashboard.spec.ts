@@ -68,6 +68,20 @@ test.describe('overview', () => {
     await expect(page.getByText('Protected', { exact: true })).toBeVisible()
     await expect(page.getByRole('link', { name: /Plan a recovery/ })).toBeVisible()
   })
+
+  test('shows real drill results, labelled apart from the simulation, with evidence', async ({ page }) => {
+    const external = forbidExternalRequests(page)
+    await page.goto('')
+    const panel = page.getByTestId('recorded-drills')
+    await expect(panel.getByRole('heading', { name: 'Measured in real AWS drills' })).toBeVisible()
+    await expect(panel.getByText('Recorded results, not simulated')).toBeVisible()
+    await expect(panel.getByText('05:29', { exact: true })).toBeVisible()
+    await expect(panel.getByText('00:26', { exact: true })).toBeVisible()
+    await expect(page.getByText('Measured 05:29 in a real drill')).toBeVisible()
+    const evidence = panel.getByRole('link', { name: /Evidence/ }).first()
+    await expect(evidence).toHaveAttribute('href', /github\.com\/jervilangelo\/bayanihan-dr\/blob\/main\/docs\/evidence\//)
+    expect(external).toEqual([])
+  })
 })
 
 test.describe('backups', () => {

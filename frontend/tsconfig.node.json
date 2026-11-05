@@ -11,5 +11,5 @@
     "strict": true,
     "verbatimModuleSyntax": true
   },
-  "include": ["vite.config.ts", "playwright.config.ts", "e2e"]
+  "include": ["vite.config.ts", "playwright.config.ts", "playwright.public.config.ts", "e2e", "e2e-public"]
 }

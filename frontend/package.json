@@ -11,7 +11,8 @@
     "preview": "vite preview --strictPort --port 4173",
     "typecheck": "tsc -b",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:public": "playwright test -c playwright.public.config.ts"
   },
   "dependencies": {
     "@fontsource/dm-sans": "^5.3.0",
