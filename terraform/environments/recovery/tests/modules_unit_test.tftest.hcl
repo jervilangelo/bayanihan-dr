@@ -35,6 +35,8 @@ run "compute_host_is_hardened_and_cost_capped" {
     backup_prefix         = "backups/"
     log_group_name        = "/bayanihandr/test/recovery"
     recovery_point_id     = "20261104T070000Z"
+    job_id                = "job-20261105T060000Z-a1b2c3"
+    app_git_ref           = "f1f86cb8279e22092b2cd85553adae7d162420b2"
   }
 
   assert {
@@ -68,13 +70,13 @@ run "compute_host_is_hardened_and_cost_capped" {
   }
 
   assert {
-    condition     = aws_instance.recovery_host.tags["RecoveryPoint"] == "20261104T070000Z"
+    condition     = aws_instance.recovery_host.tags["RecoveryPoint"] == "20261104T070000Z" && aws_instance.recovery_host.tags["JobId"] == "job-20261105T060000Z-a1b2c3"
     error_message = "The chosen recovery point must be recorded on the instance."
   }
 
   assert {
     condition = alltrue([
-      for needle in ["BDR_RECOVERY_POINT=20261104T070000Z", "BDR_BACKUP_BUCKET=bayanihandr-backups-test", "set -euo pipefail"] :
+      for needle in ["BACKUP_ID='20261104T070000Z'", "BUCKET='bayanihandr-backups-test'", "JOB_ID='job-20261105T060000Z-a1b2c3'", "APP_REF='f1f86cb8279e22092b2cd85553adae7d162420b2'", "set -euo pipefail", "verify-checksum", "recovery-complete"] :
       strcontains(aws_instance.recovery_host.user_data, needle)
     ])
     error_message = "The bootstrap script must carry the recovery settings and fail fast."

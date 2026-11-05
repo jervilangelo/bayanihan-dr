@@ -16,10 +16,13 @@ resource "aws_instance" "recovery_host" {
   monitoring                           = false # detailed monitoring is billed; 5-minute metrics suffice
 
   user_data = templatefile("${path.module}/templates/bootstrap.sh.tftpl", {
+    app_git_ref       = var.app_git_ref
+    app_repo_url      = var.app_repo_url
     backup_bucket     = var.backup_bucket_name
     backup_prefix     = var.backup_prefix
+    job_id            = var.job_id
     log_group_name    = var.log_group_name
-    recovery_point_id = coalesce(var.recovery_point_id, "latest-verified")
+    recovery_point_id = var.recovery_point_id
     region            = var.region
   })
   user_data_replace_on_change = true
@@ -44,7 +47,8 @@ resource "aws_instance" "recovery_host" {
 
   tags = {
     Name          = "${var.name_prefix}-recovery-host"
-    RecoveryPoint = coalesce(var.recovery_point_id, "latest-verified")
+    RecoveryPoint = var.recovery_point_id
+    JobId         = var.job_id
   }
 
   lifecycle {

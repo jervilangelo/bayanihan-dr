@@ -6,6 +6,32 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Bluepri
 
 ## [Unreleased]
 
+### Added (Phase 6): recovery orchestration and the first real drill
+- `backend/bdr_runner`: the authenticated local job runner.
+  - FastAPI on 127.0.0.1, bearer token, Host and Origin checks.
+  - Two job types (recovery drill, teardown), one active job at a time, an audit log, and recovery of
+    interrupted jobs on restart.
+  - Preflight → Terraform plan → plan guard (fail closed) → typed approval → apply of the saved plan → host
+    progress from CloudWatch Logs → RTO/RPO report.
+  - 20 tests.
+- Recovery host user data (`modules/compute/templates/bootstrap.sh.tftpl`): installs Docker, fetches the CMS at a
+  pinned SHA, checks the backup's SHA-256 against the manifest, restores PostgreSQL, starts the CMS, health-checks
+  it and compares record counts, reporting each step as JSON to CloudWatch Logs. Passes ShellCheck.
+- Terraform: `recovery_job_id` and `app_git_ref` inputs; a pinned commit SHA is required (16 tests).
+- Dashboard operations mode:
+  - a real Recovery page (token sign-in, off-site recovery points, plan review with cost, typed approval,
+    live step timeline, measured RTO/RPO, teardown);
+  - a dev-only proxy to the runner;
+  - the page is lazy-loaded only in dev, so the Pages bundle contains no runner code;
+  - 5 new unit tests (36 in total).
+- **First real drill** (`docs/evidence/phase6-recovery-drill.md`): CMS recovered and verified in AWS. RTO 7.2 min,
+  RPO 19.6 min, records 1050/26/3001 matched. Torn down afterwards, with nothing left running. Cost about USD 0.004.
+- ADR-014 (job runner and self-reporting host; resolves OD-5).
+
+### Changed (Phase 6)
+- `E2E_PORT` overrides the Playwright preview port (4174 was taken by another local project).
+- Operations-mode banner and Settings now reflect that drills can reach AWS after approval.
+
 ### Added (Phase 5): first AWS deployment, approved by the project owner
 - Applied `terraform/bootstrap`: the state bucket, 7 resources. Its state was then migrated into the bucket.
 - Applied `terraform/environments/recovery` in standby, 13 resources: backup bucket, recovery-host role,

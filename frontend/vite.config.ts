@@ -34,7 +34,18 @@ function localEngineStatus(): Plugin {
 export default defineConfig({
   base: '/bayanihan-dr/',
   plugins: [react(), tailwindcss(), localEngineStatus()],
-  server: { port: 5173, strictPort: true },
+  server: {
+    port: 5173,
+    strictPort: true,
+    // Local operations mode only: same-origin proxy to the job runner on this machine (backend/bdr_runner).
+    // The dev server is not part of the GitHub Pages build.
+    proxy: {
+      '/bayanihan-dr/__runner': {
+        target: 'http://127.0.0.1:8787',
+        rewrite: (path) => path.replace(/^\/bayanihan-dr\/__runner/, ''),
+      },
+    },
+  },
   test: {
     include: ['src/**/*.test.ts'],
     environment: 'node',

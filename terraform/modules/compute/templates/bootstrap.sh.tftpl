@@ -1,22 +1,119 @@
 #!/bin/bash
-# BayanihanDR recovery host bootstrap (Phase 4 scope: prepare the host only).
-# Phase 6 adds the controlled restore: download and verify the backup, restore PostgreSQL, start the CMS.
-# No secrets are placed in user data; the instance role supplies short-lived AWS credentials.
+# BayanihanDR recovery host: restore the Cooperative Management System from one verified off-site backup.
+#
+# Runs once at first boot (EC2 user data). Every step reports a structured JSON event to CloudWatch Logs
+# (log group ${log_group_name}, stream = job ID) so the operator's job runner can follow progress with no
+# inbound access to this host. No secrets are passed in: the database password is generated here, and the
+# instance role supplies short-lived AWS credentials (read backups, write this log group).
 set -euo pipefail
-exec > >(tee -a /var/log/bayanihandr-bootstrap.log) 2>&1
-echo "[$(date -u +%FT%TZ)] bootstrap started"
+exec > >(tee -a /var/log/bayanihandr-restore.log) 2>&1
 
-dnf install -y docker
-systemctl enable --now docker
+export AWS_DEFAULT_REGION='${region}'
+JOB_ID='${job_id}'
+BACKUP_ID='${recovery_point_id}'
+BUCKET='${backup_bucket}'
+PREFIX='${backup_prefix}'
+LOG_GROUP='${log_group_name}'
+APP_REPO='${app_repo_url}'
+APP_REF='${app_git_ref}'
+WORK=/opt/bayanihandr
+STEP=boot
 
-install -d -m 0750 /etc/bayanihandr
-cat > /etc/bayanihandr/recovery.env <<'ENV'
-BDR_REGION=${region}
-BDR_BACKUP_BUCKET=${backup_bucket}
-BDR_BACKUP_PREFIX=${backup_prefix}
-BDR_RECOVERY_POINT=${recovery_point_id}
-BDR_LOG_GROUP=${log_group_name}
-ENV
-chmod 0640 /etc/bayanihandr/recovery.env
+emit() { # emit <step> <status> <detail> [extra-json]
+  local extra="$${4:-}"
+  [ -n "$extra" ] || extra='{}'
+  python3 - "$1" "$2" "$3" "$extra" <<'PY'
+import json, subprocess, sys, time, os
+step, status, detail, extra = sys.argv[1:5]
+event = {"job_id": os.environ["JOB_ID"], "step": step, "status": status, "detail": detail[:900],
+         "at_ms": int(time.time() * 1000), **json.loads(extra)}
+batch = json.dumps([{"timestamp": event["at_ms"], "message": json.dumps(event)}])
+for _ in range(5):
+    r = subprocess.run(["aws", "logs", "put-log-events", "--log-group-name", os.environ["LOG_GROUP"],
+                        "--log-stream-name", os.environ["JOB_ID"], "--log-events", batch], capture_output=True)
+    if r.returncode == 0:
+        break
+    time.sleep(2)
+print("EVENT", json.dumps(event), flush=True)
+PY
+}
+export JOB_ID LOG_GROUP
 
-echo "[$(date -u +%FT%TZ)] bootstrap finished: host ready for the Phase 6 restore job"
+fail() { emit "$STEP" failed "$1"; exit 1; }
+trap 'fail "command failed at line $LINENO (exit $?)"' ERR
+
+aws logs create-log-stream --log-group-name "$LOG_GROUP" --log-stream-name "$JOB_ID" 2>/dev/null || true
+emit host-started ok "Recovery host booted; restoring backup $BACKUP_ID"
+
+STEP=install
+emit install running "Installing Docker and Git"
+dnf install -y -q docker git >/dev/null
+systemctl enable --now docker >/dev/null
+emit install ok "Docker $(docker --version | awk '{print $3}' | tr -d ,) ready"
+
+STEP=fetch-app
+emit fetch-app running "Fetching the CMS source at $APP_REF"
+mkdir -p "$WORK/app" && cd "$WORK/app"
+git init -q && git remote add origin "$APP_REPO"
+git fetch -q --depth 1 origin "$APP_REF" && git checkout -q FETCH_HEAD
+emit fetch-app ok "CMS source at commit $(git rev-parse --short HEAD)"
+
+STEP=download
+emit download running "Downloading backup $BACKUP_ID from S3"
+cd "$WORK"
+aws s3 cp --only-show-errors "s3://$BUCKET/$PREFIX$BACKUP_ID/manifest.json" manifest.json
+aws s3 cp --only-show-errors "s3://$BUCKET/$PREFIX$BACKUP_ID/cms.dump" cms.dump
+emit download ok "Downloaded $(stat -c %s cms.dump) bytes"
+
+STEP=verify-checksum
+expected=$(python3 -c 'import json;m=json.load(open("manifest.json"));assert m["status"]=="verified",m["status"];print(m["archive"]["sha256"])')
+actual=$(sha256sum cms.dump | awk '{print $1}')
+[ "$expected" = "$actual" ] || fail "SHA-256 mismatch: manifest $expected, downloaded $actual"
+emit verify-checksum ok "SHA-256 matches the verified manifest"
+
+STEP=start-db
+emit start-db running "Starting PostgreSQL 16"
+DB_PASSWORD=$(python3 -c 'import secrets; print(secrets.token_hex(24))')
+docker network create bdr >/dev/null
+docker run -d --name bdr-db --network bdr --restart unless-stopped \
+  -e POSTGRES_USER=cms -e POSTGRES_DB=cms -e POSTGRES_PASSWORD="$DB_PASSWORD" postgres:16-alpine >/dev/null
+for _ in $(seq 1 60); do docker exec bdr-db pg_isready -U cms -d cms >/dev/null 2>&1 && break; sleep 2; done
+docker exec bdr-db pg_isready -U cms -d cms >/dev/null || fail "PostgreSQL did not become ready"
+emit start-db ok "PostgreSQL ready"
+
+STEP=restore
+emit restore running "Restoring the database"
+t0=$(date +%s%3N)
+docker cp cms.dump bdr-db:/tmp/cms.dump
+docker exec bdr-db pg_restore --exit-on-error --single-transaction --no-owner --no-privileges -U cms -d cms /tmp/cms.dump
+emit restore ok "Database restored" "{\"restore_ms\": $(( $(date +%s%3N) - t0 ))}"
+
+STEP=start-app
+emit start-app running "Building and starting the CMS API"
+DOCKER_BUILDKIT=0 docker build -q --target runtime -t bdr-cms-api "$WORK/app/cooperative-system" >/dev/null
+docker run -d --name bdr-cms-api --network bdr --restart unless-stopped -p 127.0.0.1:8000:8000 \
+  -e DATABASE_URL="postgresql+psycopg://cms:$DB_PASSWORD@bdr-db:5432/cms" bdr-cms-api >/dev/null
+emit start-app ok "CMS API container started"
+
+STEP=health
+for _ in $(seq 1 90); do curl -fs http://127.0.0.1:8000/health/ready >/dev/null && break; sleep 2; done
+curl -fs http://127.0.0.1:8000/health/ready >/dev/null || fail "CMS did not report ready within 3 minutes"
+emit health ok "CMS reports ready (/health/ready)"
+
+STEP=verify-records
+counts=$(docker exec bdr-db psql -U cms -d cms -tAc \
+  "SELECT json_build_object('farmers',(SELECT count(*) FROM farmers),'inventory_items',(SELECT count(*) FROM inventory_items),'transactions',(SELECT count(*) FROM transactions))")
+api_ok=$(curl -fs 'http://127.0.0.1:8000/api/v1/farmers?limit=1' >/dev/null && echo true || echo false)
+check=$(python3 - "$counts" <<'PY'
+import json, sys
+restored = json.loads(sys.argv[1]); expected = json.load(open("/opt/bayanihandr/manifest.json"))["records"]
+diff = {t: [restored.get(t), n] for t, n in expected.items() if restored.get(t) != n}
+print(json.dumps({"restored": restored, "expected": expected, "mismatches": diff}))
+PY
+)
+[ "$(python3 -c 'import json,sys;print(not json.loads(sys.argv[1])["mismatches"])' "$check")" = True ] || fail "Record counts differ: $check"
+[ "$api_ok" = true ] || fail "CMS API did not serve farmer records"
+emit verify-records ok "Record counts match the backup manifest; API serves data" "$check"
+
+trap - ERR
+emit recovery-complete ok "CMS recovered from $BACKUP_ID and verified" "$check"

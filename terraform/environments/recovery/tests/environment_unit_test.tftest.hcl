@@ -75,6 +75,8 @@ run "recovery_drill_adds_network_host_and_alarm" {
   variables {
     recovery_enabled  = true
     recovery_point_id = "20261104T070000Z"
+    recovery_job_id   = "job-20261105T060000Z-a1b2c3"
+    app_git_ref       = "f1f86cb8279e22092b2cd85553adae7d162420b2"
   }
 
   assert {
@@ -126,8 +128,11 @@ run "rejects_large_instance_types" {
   command = plan
 
   variables {
-    recovery_enabled = true
-    instance_type    = "m5.4xlarge"
+    recovery_enabled  = true
+    instance_type     = "m5.4xlarge"
+    recovery_point_id = "20261104T070000Z"
+    recovery_job_id   = "job-20261105T060000Z-a1b2c3"
+    app_git_ref       = "f1f86cb8279e22092b2cd85553adae7d162420b2"
   }
 
   expect_failures = [var.instance_type]
@@ -139,7 +144,22 @@ run "rejects_malformed_recovery_points" {
   variables {
     recovery_enabled  = true
     recovery_point_id = "latest; rm -rf /"
+    recovery_job_id   = "job-20261105T060000Z-a1b2c3"
+    app_git_ref       = "f1f86cb8279e22092b2cd85553adae7d162420b2"
   }
 
   expect_failures = [var.recovery_point_id]
+}
+
+run "rejects_unpinned_app_source" {
+  command = plan
+
+  variables {
+    recovery_enabled  = true
+    recovery_point_id = "20261104T070000Z"
+    recovery_job_id   = "job-20261105T060000Z-a1b2c3"
+    app_git_ref       = "main"
+  }
+
+  expect_failures = [var.app_git_ref]
 }

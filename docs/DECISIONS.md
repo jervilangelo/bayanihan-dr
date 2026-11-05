@@ -199,6 +199,33 @@ Each decision records its context, the choice, and its consequences. Status valu
 
 ---
 
+## ADR-014 — Recovery job runner and self-reporting recovery host (resolves OD-5)
+
+- **Status:** Accepted
+- **Date:** 2026-11-05
+- **Decision:**
+  - **OD-5 (local authentication):** the runner listens on 127.0.0.1 only and requires a random bearer token from
+    a git-ignored file, compared in constant time. It also checks the Host header and the Origin, which blocks DNS
+    rebinding and cross-site requests. AWS access comes from the operator's SSO session, not from the runner.
+    An alternate workstation needs the repository, Terraform, the AWS CLI with SSO access, and `recovery.tfvars`
+    plus `backend.hcl`. Nothing on the office server is required.
+  - **Workflow:** preflight → `terraform plan` → plan guard → typed approval → apply of the **saved** plan →
+    the host restores itself → report. Teardown is a separate job, with a delete-only plan guard and its own approval.
+  - **Recovery host:** restores without any inbound access. User data installs Docker, fetches the CMS at a pinned
+    commit SHA, downloads the chosen backup, checks its SHA-256 against the verified manifest, restores
+    PostgreSQL, starts the CMS, health-checks it and compares record counts. It reports each step as JSON to
+    CloudWatch Logs (one stream per job). The database password is generated on the host and never leaves it.
+  - **Measurement:** RTO runs from job creation (incident declared) to the host's `recovery-complete` event, so
+    approval time counts, as it would in a real disaster. RPO is declared time minus the backup time. The report
+    lists approval wait, provisioning and host durations separately.
+- **Consequences:**
+  - The host's own report is the source of verification. An independent check from outside needs SSM port
+    forwarding (available through the operator policy).
+  - The host clones the public GitHub repository at a pinned SHA. Publishing the CMS image to a registry (Phase 8)
+    would remove the build time from the RTO.
+
+---
+
 ## Open decisions (from blueprint v1.0)
 
 | # | Question | Target phase |
@@ -207,5 +234,5 @@ Each decision records its context, the choice, and its consequences. Status valu
 | OD-2 | ~~Terraform remote-state backend + locking~~ Resolved by ADR-011 | Phase 4 ✔ |
 | OD-3 | ~~Recovery access: SSM vs SSH~~ Resolved by ADR-011 (SSM) | Phase 4 ✔ |
 | OD-4 | ~~Local schedule/retention, restore-test cadence~~ Resolved by ADR-010. S3 retention (30 d / 7 d noncurrent) in the storage module; SSE-S3 accepted (ADR-012) | Phase 5 ✔ |
-| OD-5 | Local authentication method; how alternate-workstation recovery is started | Phase 6 |
+| OD-5 | ~~Local authentication; alternate-workstation recovery~~ Resolved by ADR-014 | Phase 6 ✔ |
 | OD-6 | Verify current `ap-southeast-1` pricing and final test budget | Phase 5 |

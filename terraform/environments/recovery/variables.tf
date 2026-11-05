@@ -15,6 +15,17 @@ variable "aws_region" {
   }
 }
 
+variable "app_git_ref" {
+  description = "CMS source commit SHA the recovery host builds; required when recovery_enabled is true"
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.app_git_ref == null || can(regex("^[0-9a-f]{40}$", var.app_git_ref))
+    error_message = "app_git_ref must be a full 40-character commit SHA."
+  }
+}
+
 variable "backup_bucket_name" {
   description = "Override for the backup bucket name; null derives it from the account ID and region"
   type        = string
@@ -89,6 +100,17 @@ variable "recovery_enabled" {
   description = "Create the recovery network and host. Keep false except during an approved drill or recovery."
   type        = bool
   default     = false
+}
+
+variable "recovery_job_id" {
+  description = "Job ID from the recovery job runner; required when recovery_enabled is true"
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.recovery_job_id == null || can(regex("^job-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{6}$", var.recovery_job_id))
+    error_message = "recovery_job_id must look like job-20261105T060000Z-a1b2c3."
+  }
 }
 
 variable "recovery_point_id" {

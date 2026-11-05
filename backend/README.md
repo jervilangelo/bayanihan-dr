@@ -61,6 +61,39 @@ checks on arrival. The manifest then records `offsite: stored` with the S3 versi
 Backups are written to `<repo>/backups/`, which is git-ignored and never committed. To see them in the dashboard,
 run `npm run dev:ops` in `frontend/`.
 
+## Recovery job runner (Phase 6)
+
+`bdr_runner` is a local, authenticated API on the operator's trusted workstation. It runs **real recovery drills**
+into AWS through a bounded Terraform workflow (blueprint §10). It needs nothing from the office server: recovery
+points, Terraform state and logs all live in AWS.
+
+```bash
+cd backend
+python -m venv .venv && .venv/Scripts/pip install -r requirements-runner.txt   # Windows path; bin/ on Linux
+aws sso login --profile bayanihan-dr-dev
+AWS_PROFILE=bayanihan-dr-dev .venv/Scripts/python -m bdr_runner   # http://127.0.0.1:8787
+cd ../frontend && npm run dev:ops   # Recovery page -> paste the token from backend/var/admin-token
+```
+
+| Step | What happens | Fails closed when |
+|---|---|---|
+| Preflight | Checks the SSO role, that no recovery host exists, that the backup is verified **off-site**, and pins the CMS commit SHA | Wrong role, a drill already running, the point not in S3 |
+| Plan | `terraform plan` with validated variables only; the plan guard checks every planned change | Anything outside the drill footprint, any update or replace, no host planned |
+| Approval | The job waits; an administrator must type the job ID | Wrong ID: nothing is applied |
+| Provision | `terraform apply` of the saved plan file (exactly what was reviewed) | Apply error: the job fails with Terraform's message |
+| Restore | The host reports each step to CloudWatch Logs: install, fetch app, download, SHA-256, start DB, restore, start CMS, health, record counts | Any host step fails, or no verified recovery within 30 min |
+| Report | RTO (declared → verified), RPO (declared − backup time), step durations | n/a |
+| Teardown | A separate job: the plan may only **delete** drill resources, it needs its own approval, and it confirms no hosts remain | Plan touches backups, IAM or the budget |
+
+Security:
+- binds to 127.0.0.1 only, with Host-header and Origin checks;
+- a random bearer token, created on first start in `backend/var/admin-token` (git-ignored), compared in constant time;
+- two job types only, and a backup ID matching a strict pattern;
+- no SQL, shell commands, paths or Terraform arguments from requests;
+- only one active job at a time;
+- every action goes to `backend/var/jobs/audit.jsonl`;
+- a job that was active when the runner stopped is marked failed on restart, never resumed blindly.
+
 ## Configuration (environment variables)
 
 | Variable | Default | Meaning |

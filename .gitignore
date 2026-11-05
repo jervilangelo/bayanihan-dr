@@ -69,3 +69,7 @@ Thumbs.db
 
 # ---- Terraform backend settings for a real account (bucket names include the account ID) ----
 terraform/**/backend.hcl
+
+# ---- job runner local state: admin token, job records, Terraform plan files ----
+backend/var/
+backend/.venv/

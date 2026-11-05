@@ -96,8 +96,8 @@ export function createLocalStatusProvider(options: LocalStatusProviderOptions): 
       const s = await load()
       return {
         mode: 'operational',
-        environment: 'Local operations (read-only, Phase 3)',
-        region: 'ap-southeast-1 (not connected yet)',
+        environment: 'Local operations (job runner, Phase 6)',
+        region: 'ap-southeast-1 (Singapore)',
         timeZone: 'Asia/Manila (PHT, UTC+8)',
         targets: s.targets,
         schedule: { expression: `every ${s.schedule.intervalMinutes} min`, description: s.schedule.description },

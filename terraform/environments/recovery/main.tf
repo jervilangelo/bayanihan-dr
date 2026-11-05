@@ -64,4 +64,14 @@ module "compute" {
   backup_prefix         = module.storage.backup_prefix
   log_group_name        = module.monitoring.log_group_name
   recovery_point_id     = var.recovery_point_id
+  job_id                = var.recovery_job_id
+  app_git_ref           = var.app_git_ref
+}
+
+# A recovery must name exactly what it restores and which code it runs: fail at plan time otherwise.
+check "recovery_inputs" {
+  assert {
+    condition     = !var.recovery_enabled || (var.recovery_point_id != null && var.recovery_job_id != null && var.app_git_ref != null)
+    error_message = "recovery_enabled = true requires recovery_point_id, recovery_job_id and app_git_ref (the job runner sets them)."
+  }
 }
