@@ -17,6 +17,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Bluepri
   Checks direct links and refresh on every page, no external or AWS requests, no HTTP errors or console errors,
   the published results, the full simulation, and that no operational code is in the bundle.
 - `.github/workflows/public-site.yml` runs those checks after each Pages deployment and weekly.
+- Live-site results: 16/16 passed locally against https://jervilangelo.github.io/bayanihan-dr/ (desktop and phone),
+  and the workflow passed after deployment.
+
+### Fixed (Phase 9)
+- A race in the e2e test "simulated recovery runs end to end": on fast Linux CI the outgoing Recovery page was
+  still fading out when the test searched for text it shares with the Activity page. Reproduced in the CI
+  Playwright image; 100/100 passes with every test run twice after the fix.
 
 ### Added (Phase 8): CI/CD
 - `.github/workflows/ci.yml` runs on every push and pull request.

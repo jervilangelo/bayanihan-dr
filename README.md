@@ -7,7 +7,7 @@ typhoon takes the fictional Bicol Farmers Cooperative's on-premises server offli
 Cooperative Management System in AWS (`ap-southeast-1`) from verified, encrypted off-site backups, and measures
 how long recovery actually took.
 
-> Status: **Phases 1–8 of 10 complete.** The AWS standby environment is deployed, and verified backups are stored off-site.
+> Status: **Phases 1–9 of 10 complete.** The AWS standby environment is deployed, and verified backups are stored off-site.
 > One controlled recovery drill has run (2026-11-05): the CMS was recovered in AWS and verified with **RTO 7.2 min and
 > RPO 19.6 min** against targets of 30 and 60 ([evidence](docs/evidence/phase6-recovery-drill.md)). That is one measured
 > drill, not a guarantee. The Phase 7 disaster drill (primary stopped, recovery from a fresh clone) passed all 10
