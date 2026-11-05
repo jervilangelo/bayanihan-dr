@@ -1,5 +1,7 @@
 # BayanihanDR
 
+[![CI](https://github.com/jervilangelo/bayanihan-dr/actions/workflows/ci.yml/badge.svg)](https://github.com/jervilangelo/bayanihan-dr/actions/workflows/ci.yml)
+
 **Terraform-powered disaster recovery for Philippine small businesses.** It's a portfolio proof of concept. When a
 typhoon takes the fictional Bicol Farmers Cooperative's on-premises server offline, BayanihanDR restores its
 Cooperative Management System in AWS (`ap-southeast-1`) from verified, encrypted off-site backups, and measures
