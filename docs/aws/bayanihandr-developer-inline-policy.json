@@ -1,0 +1,186 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "S3ProjectBucketsOnly",
+      "Effect": "Allow",
+      "Action": "s3:*",
+      "Resource": "arn:aws:s3:::bayanihandr-*"
+    },
+    {
+      "Sid": "IamProjectRolesAndProfilesOnly",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole",
+        "iam:DeleteRole",
+        "iam:UpdateRole",
+        "iam:UpdateAssumeRolePolicy",
+        "iam:TagRole",
+        "iam:UntagRole",
+        "iam:PutRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:CreateInstanceProfile",
+        "iam:DeleteInstanceProfile",
+        "iam:AddRoleToInstanceProfile",
+        "iam:RemoveRoleFromInstanceProfile",
+        "iam:TagInstanceProfile",
+        "iam:UntagInstanceProfile"
+      ],
+      "Resource": [
+        "arn:aws:iam::*:role/bdr-*",
+        "arn:aws:iam::*:instance-profile/bdr-*"
+      ]
+    },
+    {
+      "Sid": "AttachOnlyTheSsmManagedPolicy",
+      "Effect": "Allow",
+      "Action": [
+        "iam:AttachRolePolicy",
+        "iam:DetachRolePolicy"
+      ],
+      "Resource": "arn:aws:iam::*:role/bdr-*",
+      "Condition": {
+        "ArnEquals": {
+          "iam:PolicyARN": "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+        }
+      }
+    },
+    {
+      "Sid": "PassProjectRoleToEc2Only",
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::*:role/bdr-*",
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": "ec2.amazonaws.com"
+        }
+      }
+    },
+    {
+      "Sid": "Ec2InSingaporeOnly",
+      "Effect": "Allow",
+      "Action": "ec2:*",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "ap-southeast-1"
+        }
+      }
+    },
+    {
+      "Sid": "ProjectLogGroupsOnly",
+      "Effect": "Allow",
+      "Action": "logs:*",
+      "Resource": "arn:aws:logs:ap-southeast-1:*:log-group:/bayanihandr/*"
+    },
+    {
+      "Sid": "ProjectAlarmsOnly",
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:PutMetricAlarm",
+        "cloudwatch:DeleteAlarms",
+        "cloudwatch:TagResource",
+        "cloudwatch:UntagResource",
+        "cloudwatch:EnableAlarmActions",
+        "cloudwatch:DisableAlarmActions"
+      ],
+      "Resource": "arn:aws:cloudwatch:ap-southeast-1:*:alarm:bdr-*"
+    },
+    {
+      "Sid": "ProjectBudgetsOnly",
+      "Effect": "Allow",
+      "Action": [
+        "budgets:ModifyBudget",
+        "budgets:ViewBudget",
+        "budgets:TagResource",
+        "budgets:UntagResource",
+        "budgets:ListTagsForResource"
+      ],
+      "Resource": "arn:aws:budgets::*:budget/bdr-*"
+    },
+    {
+      "Sid": "SsmSessionsToProjectHostsOnly",
+      "Effect": "Allow",
+      "Action": "ssm:StartSession",
+      "Resource": "arn:aws:ec2:ap-southeast-1:*:instance/*",
+      "Condition": {
+        "StringEquals": {
+          "ssm:resourceTag/Project": "BayanihanDR"
+        }
+      }
+    },
+    {
+      "Sid": "SsmSessionDocumentAndOwnSessions",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:StartSession",
+        "ssm:TerminateSession",
+        "ssm:ResumeSession"
+      ],
+      "Resource": [
+        "arn:aws:ssm:ap-southeast-1::document/AWS-StartPortForwardingSession",
+        "arn:aws:ssm:ap-southeast-1::document/SSM-SessionManagerRunShell",
+        "arn:aws:ssm:*:*:session/${aws:userid}-*"
+      ]
+    },
+    {
+      "Sid": "GuardrailOnlyAllowedInstanceTypes",
+      "Effect": "Deny",
+      "Action": "ec2:RunInstances",
+      "Resource": "arn:aws:ec2:*:*:instance/*",
+      "Condition": {
+        "StringNotEquals": {
+          "ec2:InstanceType": [
+            "t3.micro",
+            "t3.small",
+            "t3.medium"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "GuardrailNoExpensiveOrRiskyServices",
+      "Effect": "Deny",
+      "Action": [
+        "ec2:CreateNatGateway",
+        "ec2:AllocateAddress",
+        "ec2:PurchaseReservedInstancesOffering",
+        "ec2:PurchaseHostReservation",
+        "ec2:AllocateHosts",
+        "ec2:RequestSpotFleet",
+        "ec2:CreateFleet",
+        "rds:*",
+        "elasticloadbalancing:*",
+        "eks:*",
+        "iam:CreateUser",
+        "iam:CreateAccessKey",
+        "iam:CreateLoginProfile"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "GuardrailSingaporeOnlyForRegionalServices",
+      "Effect": "Deny",
+      "NotAction": [
+        "iam:*",
+        "sts:*",
+        "budgets:*",
+        "ce:*",
+        "s3:ListAllMyBuckets",
+        "sso:*",
+        "sso-oauth:*",
+        "account:*",
+        "support:*",
+        "health:*",
+        "organizations:Describe*",
+        "organizations:List*"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringNotEquals": {
+          "aws:RequestedRegion": "ap-southeast-1"
+        }
+      }
+    }
+  ]
+}

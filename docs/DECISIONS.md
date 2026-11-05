@@ -143,13 +143,52 @@ Each decision records its context, the choice, and its consequences. Status valu
 
 ---
 
+## ADR-011 — Terraform layout, remote state and recovery access (resolves OD-2 and OD-3)
+
+- **Status:** Accepted
+- **Date:** 2026-11-05
+- **Decision:**
+  - Five local modules (networking, compute, storage, identity, monitoring) and one root,
+    `environments/recovery`. A `recovery_enabled` switch adds or removes the paid network and compute, while the
+    backup bucket and IAM stay in place.
+  - **OD-2:** S3 backend with native lockfiles (`use_lockfile`, Terraform ≥ 1.10). There is no DynamoDB table.
+    The state bucket comes from a separate `bootstrap/` configuration with local state, applied once in Phase 5,
+    with `prevent_destroy` set.
+  - **OD-3:** SSM Session Manager. There are no inbound security-group rules, no SSH keys and no bastion. The host
+    needs outbound 443 only.
+  - No NAT Gateway: the host gets a public IPv4 (about USD 0.005/h) for outbound traffic. S3 traffic goes through
+    a free gateway endpoint.
+  - Tests run with `terraform test` on a mocked provider, so CI needs no AWS credentials.
+- **Consequences:** a real `plan` needs a read-only AWS profile (permission set `BayanihanDR-Developer-V5`, `ReadOnlyAccess`). Teardown has to
+  empty the backup bucket on purpose, because `force_destroy` is false.
+
+---
+
+## ADR-012 — Encryption and logging trade-offs accepted for cost (proposes the OD-4 encryption answer)
+
+- **Status:** Proposed. Confirm at the Phase 5 apply review.
+- **Date:** 2026-11-05
+- **Context:** Trivy flags SSE-S3 instead of a customer managed KMS key (AWS-0132, HIGH), log groups without
+  a CMK (AWS-0017, LOW) and S3 buckets without access logging (AWS-0089, LOW).
+- **Decision:**
+  - Use SSE-S3 for the backup and state buckets. A CMK costs about USD 1/month plus requests, which is a large
+    share of a PHP 300–500 budget, and the data is synthetic. The storage module switches to SSE-KMS with one
+    variable (`kms_key_arn`).
+  - Use CloudWatch's default encryption for logs.
+  - Do not enable S3 access logging, which needs another bucket. CloudTrail management events record bucket
+    configuration changes.
+  - Each accepted finding is annotated in place with `#trivy:ignore`, so scans pass but the exception stays visible.
+- **Revisit:** if real (non-synthetic) data is ever stored, or if a stricter compliance baseline is needed.
+
+---
+
 ## Open decisions (from blueprint v1.0)
 
 | # | Question | Target phase |
 |---|---|---|
 | OD-1 | ~~HashRouter vs static route fallback for GitHub Pages~~ Resolved by ADR-006 | Phase 2 ✔ |
-| OD-2 | Terraform remote-state backend + locking; bootstrap and residual cost | Phase 4 |
-| OD-3 | Recovery access: SSM Session Manager (preferred) vs restricted SSH | Phase 4 |
-| OD-4 | ~~Local schedule/retention, restore-test cadence~~ Resolved by ADR-010. Still open: S3 retention, SSE-S3 vs SSE-KMS | Phase 5 |
+| OD-2 | ~~Terraform remote-state backend + locking~~ Resolved by ADR-011 | Phase 4 ✔ |
+| OD-3 | ~~Recovery access: SSM vs SSH~~ Resolved by ADR-011 (SSM) | Phase 4 ✔ |
+| OD-4 | ~~Local schedule/retention, restore-test cadence~~ Resolved by ADR-010. S3 retention (30 d / 7 d noncurrent) in the storage module; SSE-S3 proposed in ADR-012, confirm at apply review | Phase 5 |
 | OD-5 | Local authentication method; how alternate-workstation recovery is started | Phase 6 |
 | OD-6 | Verify current `ap-southeast-1` pricing and final test budget | Phase 5 |

@@ -1,0 +1,22 @@
+#!/bin/bash
+# BayanihanDR recovery host bootstrap (Phase 4 scope: prepare the host only).
+# Phase 6 adds the controlled restore: download and verify the backup, restore PostgreSQL, start the CMS.
+# No secrets are placed in user data; the instance role supplies short-lived AWS credentials.
+set -euo pipefail
+exec > >(tee -a /var/log/bayanihandr-bootstrap.log) 2>&1
+echo "[$(date -u +%FT%TZ)] bootstrap started"
+
+dnf install -y docker
+systemctl enable --now docker
+
+install -d -m 0750 /etc/bayanihandr
+cat > /etc/bayanihandr/recovery.env <<'ENV'
+BDR_REGION=${region}
+BDR_BACKUP_BUCKET=${backup_bucket}
+BDR_BACKUP_PREFIX=${backup_prefix}
+BDR_RECOVERY_POINT=${recovery_point_id}
+BDR_LOG_GROUP=${log_group_name}
+ENV
+chmod 0640 /etc/bayanihandr/recovery.env
+
+echo "[$(date -u +%FT%TZ)] bootstrap finished: host ready for the Phase 6 restore job"

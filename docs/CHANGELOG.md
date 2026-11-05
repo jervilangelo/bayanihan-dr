@@ -6,6 +6,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Bluepri
 
 ## [Unreleased]
 
+### Added (Phase 4)
+- `terraform/`: AWS infrastructure code. **Nothing is applied.**
+  - Modules: `networking`, `compute`, `storage`, `identity`, `monitoring`.
+  - Root: `environments/recovery`, with a `recovery_enabled` switch.
+  - `bootstrap/` for the remote-state bucket.
+  - Choices: S3 native state locking, SSM access with no inbound rules, IMDSv2, encrypted gp3, capped T3 credits,
+    no NAT, RDS or load balancer, an upload-only backup-writer role, and an optional AWS Budgets alert.
+- 15 `terraform test` runs on a mocked provider (no credentials). They cover the default footprint, the drill
+  footprint, input validation, host hardening, network isolation, bucket protection, IAM with no delete
+  permissions, and log retention.
+- TFLint (AWS ruleset) and Trivy configuration; accepted findings are annotated.
+- Provider lock files for Windows, Linux and macOS.
+- `.gitattributes` keeps shell scripts and templates LF-only.
+- ADR-011 (layout, state, SSM; resolves OD-2 and OD-3) and ADR-012 (encryption and logging trade-offs, proposed).
+- `docs/evidence/phase4-plan-review.md`: real read-only plans against the AWS account (standby 12 resources, drill
+  24, nothing applied), signed in with the `BayanihanDR-Developer-V5` permission set (`ReadOnlyAccess`).
+- `docs/aws/bayanihandr-developer-inline-policy.json`: a project-scoped inline policy for the developer permission
+  set, for the one-week build. It allows writes only to `bayanihandr-*` and `bdr-*` resources in ap-southeast-1,
+  and denies NAT gateways, Elastic IPs, RDS, load balancers, EKS, IAM users and access keys, and other regions.
+  Validated with IAM Access Analyzer (0 findings). Delete it with the permission set after the project.
+
 ### Added (Phase 3)
 - `backend/bdr_engine`: the backup engine (System B, part 1).
   - Snapshot-consistent `pg_dump` with manifests (SHA-256, sizes, record counts, schema revision).

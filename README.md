@@ -5,13 +5,13 @@ typhoon takes the fictional Bicol Farmers Cooperative's on-premises server offli
 Cooperative Management System in AWS (`ap-southeast-1`) from verified, encrypted off-site backups, and measures
 how long recovery actually took.
 
-> Status: **Phases 1–3 of 10 complete (local CMS, dashboard, verified local backups).** No AWS resources exist yet. Recovery metrics will be published only
+> Status: **Phases 1–4 of 10 complete (local CMS, dashboard, verified local backups, Terraform code).** No AWS resources exist yet; nothing has been applied. Recovery metrics will be published only
 > after a real, measured drill. Nothing here is a claimed result yet.
 
 | System | Folder | Status |
 |---|---|---|
 | A. Cooperative Management System (FastAPI + PostgreSQL + Docker Compose) | [`cooperative-system/`](cooperative-system/) | ✅ Phase 1 |
-| B. Recovery engine (backups, Terraform orchestration, restore, metrics) | [`backend/`](backend/), `terraform/` | ✅ Phase 3 (local backups + restore verification); Phases 4–7 planned |
+| B. Recovery engine (backups, Terraform orchestration, restore, metrics) | [`backend/`](backend/), [`terraform/`](terraform/) | ✅ Phase 3 (local backups + restore verification); ✅ Phase 4 (Terraform, plan-only); Phases 5–7 planned |
 | C. Dashboard (React + Vite; local ops mode + public GitHub Pages demo) | [`frontend/`](frontend/) | ✅ Phase 2 (public demo); read-only local ops mode in Phase 3 |
 
 Recovery targets (design goals, **not yet measured**): RTO 30 minutes, RPO 1 hour.

@@ -66,3 +66,6 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# ---- Terraform backend settings for a real account (bucket names include the account ID) ----
+terraform/**/backend.hcl
