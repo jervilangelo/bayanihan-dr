@@ -123,6 +123,10 @@ test.describe('simulated recovery', () => {
     await expect(page.getByText(/placeholders, not measurements/)).toBeVisible()
 
     await page.getByRole('link', { name: 'View activity' }).click()
+    // Wait for the page transition to finish: until then the Recovery page (whose heading has the same text) is
+    // still fading out, and the text below would match twice.
+    await expect(page.getByRole('heading', { level: 1, name: 'Activity' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'Recovery' })).toHaveCount(0)
     await expect(page.getByText('Simulated recovery finished')).toBeVisible()
     await expect(page.getByText('Simulated recovery approved')).toBeVisible()
     expect(external).toEqual([])
