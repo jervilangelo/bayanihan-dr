@@ -243,6 +243,22 @@ Each decision records its context, the choice, and its consequences. Status valu
 
 ---
 
+## ADR-016 — Keep the standby environment after the project; full teardown documented, not run
+
+- **Status:** Accepted by the project owner
+- **Date:** 2026-11-05
+- **Decision:**
+  - Keep the standby footprint in AWS: the backup and state buckets, two IAM roles, the log group and the budget.
+    It costs about USD 0.01/month or less, keeps the off-site recovery points, and lets a drill run again at any time.
+  - Every drill environment is torn down; none is running.
+  - The full destroy plan was reviewed (15 resources) and recorded in `docs/evidence/phase10-inventory.md`. The
+    procedure, including emptying the versioned bucket and removing the state bucket's `prevent_destroy`, is
+    RUNBOOK §11.
+- **Consequences:** blueprint Phase 10's "approved destroy" is deferred by the owner's decision. The public demo
+  works with or without AWS. Re-check billing after 2026-11-06 to confirm the drill charges.
+
+---
+
 ## Open decisions (from blueprint v1.0)
 
 | # | Question | Target phase |
@@ -252,4 +268,4 @@ Each decision records its context, the choice, and its consequences. Status valu
 | OD-3 | ~~Recovery access: SSM vs SSH~~ Resolved by ADR-011 (SSM) | Phase 4 ✔ |
 | OD-4 | ~~Local schedule/retention, restore-test cadence~~ Resolved by ADR-010. S3 retention (30 d / 7 d noncurrent) in the storage module; SSE-S3 accepted (ADR-012) | Phase 5 ✔ |
 | OD-5 | ~~Local authentication; alternate-workstation recovery~~ Resolved by ADR-014 | Phase 6 ✔ |
-| OD-6 | Verify current `ap-southeast-1` pricing and final test budget | Phase 5 |
+| OD-6 | ~~Verify current pricing and test budget~~ Verified with the AWS Pricing API (2026-11-05); actual spend ≈ USD 0.01 (docs/COST.md) | Phase 5 ✔ |

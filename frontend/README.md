@@ -48,3 +48,13 @@ e2e/             Playwright specs
 ```
 
 Design decisions: `docs/DECISIONS.md` ADR-006 (hash routing), ADR-007 (design system), ADR-008 (provider and simulation).
+
+## Published results and live-site checks
+
+- `src/data/recorded-drills.ts`: sanitized results of the real AWS drills (Phase 6, Phase 7), shown on the
+  Overview as "Measured in real AWS drills". A unit test blocks account IDs, IPs, instance IDs, bucket names,
+  e-mails and ARNs, and checks that stage durations add up to each RTO.
+- `npm run test:public`: Playwright against the live GitHub Pages site (`e2e-public/`). It also runs after each
+  deployment and weekly (`.github/workflows/public-site.yml`).
+- `E2E_PORT=4175 npm run test:e2e`: use another port when 4174 is taken.
+- `node scripts/screenshots.mjs`: regenerate `docs/screenshots/`.

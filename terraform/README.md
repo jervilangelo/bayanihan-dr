@@ -4,6 +4,8 @@ This folder holds the AWS infrastructure that BayanihanDR recovers into (bluepri
 (Singapore).
 
 > **Phase 4 status:** the code is written, formatted, validated, linted, scanned and tested on a mocked provider.
+> **Current state (Phase 10):** the standby setup stays deployed (ADR-016); no drill environment is running. Reviewed
+> destroy plan: [docs/evidence/phase10-inventory.md](../docs/evidence/phase10-inventory.md).
 > **Phase 5:** the state bucket and the standby setup are applied (see [docs/evidence/phase5-deployment.md](../docs/evidence/phase5-deployment.md)).
 > Real read-only plans have been reviewed: 12 resources in standby, 24 in a drill (see
 > [docs/evidence/phase4-plan-review.md](../docs/evidence/phase4-plan-review.md)). **Nothing has been applied.**

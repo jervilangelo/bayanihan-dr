@@ -6,6 +6,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Bluepri
 
 ## [Unreleased]
 
+### Added (Phase 10): documentation and teardown review
+- `docs/README.md`: an index of all documentation, evidence and screenshots.
+- `docs/ARCHITECTURE.md`: the three systems, a component diagram, backup and recovery sequence diagrams, trust
+  boundaries, failure domains, data stores and a repository map.
+- `docs/RUNBOOK.md`:
+  - names and places;
+  - daily check, backups and off-site copies, runner and dashboard;
+  - drills, **real disaster recovery**, teardown, alternate workstation, host inspection;
+  - a troubleshooting table, full project teardown, credential rotation.
+- `docs/SETUP.md`: rebuild from scratch, step by step, from tools to the first drill.
+- `docs/SECURITY.md`: threat model with controls and evidence, accepted risks, open items, incident first steps.
+- `docs/COST.md`: verified prices, standby and drill costs, actual drills, Cost Explorer records, cost risks.
+- `docs/LESSONS-LEARNED.md`: what worked, surprises, measured results, open items in priority order.
+- `docs/evidence/phase10-inventory.md`: AWS inventory verified with `describe-*` calls, the reviewed destroy plan
+  (15 resources, not applied), residual billing.
+- `docs/screenshots/` of the live site, and `frontend/scripts/screenshots.mjs` to regenerate them.
+- Root README rewritten: status, measured results, how it works, security in brief, quick start, test inventory.
+- ADR-016 (keep standby; teardown documented); OD-6 resolved (pricing verified).
+
 ### Added (Phase 9): public site with recorded results
 - Overview now shows **"Measured in real AWS drills"**, with sanitized results from the Phase 7 and Phase 6 drills:
   RTO and RPO against targets, a breakdown of where the recovery time went, records restored, verification
