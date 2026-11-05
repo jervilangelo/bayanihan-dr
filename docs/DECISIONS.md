@@ -226,6 +226,23 @@ Each decision records its context, the choice, and its consequences. Status valu
 
 ---
 
+## ADR-015 — CI without cloud credentials
+
+- **Status:** Accepted
+- **Date:** 2026-11-05
+- **Decision:**
+  - CI never holds AWS credentials. Infrastructure is checked by static analysis (fmt, validate, TFLint, Trivy)
+    and `terraform test` on a mocked provider.
+  - `plan` and `apply` stay with the operator and the job runner, behind the plan guard and approval.
+  - Workflows default to `contents: read`. Only the Pages deploy job gets `pages: write` and `id-token: write`.
+  - Third-party actions are pinned to commit SHAs, with Dependabot proposing updates.
+  - Tests run against real PostgreSQL in containers, mirroring local development.
+- **Consequences:** a malicious pull request or compromised action cannot reach AWS. Real-plan drift is only caught
+  when an operator plans: a scheduled read-only plan through GitHub OIDC is a possible later addition, but it would
+  need a dedicated read-only role.
+
+---
+
 ## Open decisions (from blueprint v1.0)
 
 | # | Question | Target phase |

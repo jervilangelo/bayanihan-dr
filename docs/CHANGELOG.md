@@ -6,6 +6,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Bluepri
 
 ## [Unreleased]
 
+### Added (Phase 8): CI/CD
+- `.github/workflows/ci.yml` runs on every push and pull request.
+  - **Dashboard:** typecheck, 36 unit tests, production build, 48 Playwright e2e tests, and a check that no
+    job-runner code reaches the Pages bundle.
+  - **CMS and backup engine:** tests against real PostgreSQL 16 through docker compose.
+  - **Job runner:** 20 tests.
+  - **Terraform:** fmt, validate, 16 `terraform test` runs on a mocked provider, TFLint with the AWS ruleset,
+    Trivy, and ShellCheck of the rendered recovery-host script.
+  - First run (commit `4d7fcbd`): all 4 jobs passed, in 17–73 s each.
+- Least privilege: `contents: read` only, no secrets or AWS credentials, every action pinned to a commit SHA,
+  `persist-credentials: false`. The Pages workflow is pinned the same way.
+- `.github/dependabot.yml`: weekly grouped updates for actions, npm, pip and Docker base images.
+- `scripts/validation/render_bootstrap.py` renders the EC2 user-data template for linting.
+- ADR-015 (CI design).
+
 ### Added (Phase 7): disaster drill and recovery test report
 - `docs/evidence/phase7-test-plan.md`: scenario, procedure, measurement boundaries and pass criteria, written
   before the drill.
