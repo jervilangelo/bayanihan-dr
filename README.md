@@ -1,95 +1,123 @@
-# BayanihanDR
+﻿# BayanihanDR
+
+![BayanihanDR: Disaster Recovery Through Infrastructure as Code](frontend/src/bayanihan-showcase.jpg)
 
 [![CI](https://github.com/jervilangelo/bayanihan-dr/actions/workflows/ci.yml/badge.svg)](https://github.com/jervilangelo/bayanihan-dr/actions/workflows/ci.yml)
 [![Public site check](https://github.com/jervilangelo/bayanihan-dr/actions/workflows/public-site.yml/badge.svg)](https://github.com/jervilangelo/bayanihan-dr/actions/workflows/public-site.yml)
 
-**Terraform-powered disaster recovery for Philippine small businesses.** A portfolio proof of concept: when a
-typhoon takes the fictional Bicol Farmers Cooperative's office server offline, BayanihanDR rebuilds its Cooperative
-Management System in AWS (Singapore, `ap-southeast-1`) from verified, encrypted off-site backups, and measures how
-long the recovery actually took.
+**Recover a small business application in AWS when its office server goes offline.**
 
-**Live demo:** https://jervilangelo.github.io/bayanihan-dr/ (static, simulated data plus the real measured results; it never contacts AWS)
+BayanihanDR is a disaster recovery proof of concept for Philippine small businesses. It protects a sample management system for the fictional **Bicol Farmers Cooperative**, which stores member, inventory, and financial records.
 
-![Overview of the BayanihanDR dashboard](docs/screenshots/overview-desktop.png)
+If a typhoon takes the office server offline, BayanihanDR uses Terraform to create a temporary recovery server in AWS Singapore (`ap-southeast-1`), restore a verified backup, and check that the application works again.
 
-## Status
+**[Try the live demo](https://jervilangelo.github.io/bayanihan-dr/)** · **[Browse the documentation](docs/README.md)**
 
-**All 10 phases complete (2026-11-05).** The AWS **standby** environment stays deployed on purpose: an encrypted
-backup bucket, IAM roles, a log group and a budget alert, costing pennies per month. No servers are running.
+The public demo uses simulated data and recovery steps, alongside published results from real AWS drills. It does not connect to AWS or create resources. All project data is synthetic.
 
-| Measured result (real AWS drills) | RTO | RPO | Evidence |
-|---|---|---|---|
-| **Phase 7 disaster drill:** office server stopped, recovery from a fresh clone, independently verified, corrupted backup refused | **5 min 29 s** | **26 s** | [report](docs/evidence/phase7-disaster-drill.md) (10/10 criteria) |
-| Phase 6 first controlled drill | 7 min 15 s | 19 min 38 s | [report](docs/evidence/phase6-recovery-drill.md) |
-| Targets (blueprint §5) | 30 min | 60 min | n/a |
-
-These are single runs on a small synthetic dataset, not guarantees. The 26-second RPO reflects a backup taken just
-before the outage. **Main open item:** off-site upload still needs an operator session, so in practice the RPO depends
-on someone running `upload --all` (see [open items](docs/LESSONS-LEARNED.md#open-items-in-priority-order)).
-
-Total AWS spend for the whole project so far: **about USD 0.01 for compute, plus fractions of a cent for S3**
-([COST.md](docs/COST.md)).
+![BayanihanDR dashboard showing backup readiness](docs/screenshots/overview-desktop.png)
 
 ## How it works
 
-| System | Folder | What it does |
-|---|---|---|
-| **A. Cooperative Management System** | [`cooperative-system/`](cooperative-system/) | FastAPI + PostgreSQL 16 on Docker Compose: members, inventory, ledger. Synthetic data. |
-| **B. Recovery engine** | [`backend/`](backend/), [`terraform/`](terraform/) | **`bdr_engine`:** hourly snapshot-consistent backups, each test-restored and recounted before it counts as verified; retention; upload-only off-site copies to S3. **`bdr_runner`:** a local, token-protected job runner (preflight → Terraform plan → fail-closed plan guard → typed approval → apply → host restores itself → RTO/RPO report → teardown). **Terraform:** five modules, a standby/drill switch, S3 state with native locking. |
-| **C. Dashboard** | [`frontend/`](frontend/) | React + Vite + TypeScript. **Demo mode** on GitHub Pages: simulated data, an interactive simulated recovery, and the published real results. **Operations mode** locally: real backups and real recovery jobs. |
+1. **Back up the database every hour.** Each backup is restored into a temporary test database to check that it can be recovered.
+2. **Copy verified backups to AWS S3.** Encrypted, off-site copies remain available if the office server is lost. Uploads currently require an operator session.
+3. **Review and approve recovery.** A local job runner checks the backup and Terraform plan. The operator approves the job before AWS resources are created.
+4. **Restore and verify.** The recovery server checks the backup's checksum, restores the database, and checks application health and record counts.
+5. **Measure recovery.** The workflow reports recovery time and potential data loss. The operator can then tear down temporary recovery resources.
 
 ```mermaid
 flowchart LR
-  Office["Office: CMS + PostgreSQL<br/>hourly verified backups"] -- "upload-only role" --> S3[("S3 backups<br/>encrypted, versioned")]
-  Laptop["Any trusted laptop<br/>job runner + Terraform"] -- "plan guard + approval" --> EC2["Temporary EC2 recovery host<br/>(only during a recovery)"]
-  S3 -- "verified backup, SHA-256 checked" --> EC2
-  EC2 -- "progress events" --> CW["CloudWatch Logs"] --> Laptop
+  Office["Office application + database"] --> Backup["Hourly backup + test restore"]
+  Backup -->|Operator uploads| S3[("Encrypted backups in S3")]
+  Operator["Operator reviews + approves"] --> Terraform["Terraform creates recovery server"]
+  S3 --> Restore["Restore + verify application"]
+  Terraform --> Restore
+  Restore --> Report["Recovery report"]
 ```
 
-More: [ARCHITECTURE.md](docs/ARCHITECTURE.md) (diagrams, data flows, trust boundaries).
+See the [architecture guide](docs/ARCHITECTURE.md) for the full design.
 
-## Security in brief
+## Recovery results
 
-- No long-lived AWS keys anywhere; SSO sessions last 4 h.
-- The office server can only *add* backups, never read or delete them.
-- The recovery host has **no inbound ports**: access through SSM only, and IMDSv2 is required.
-- The operator policy denies NAT gateways, load balancers, RDS, EKS, IAM users and other regions.
-- CI has no cloud credentials, and its actions are pinned to commit SHAs.
-- The public site is static and sanitized, and is tested to make zero external requests.
+| Real AWS drill | Time to recover (RTO) | Potential data loss (RPO) | Evidence |
+|---|---|---|---|
+| Final disaster drill | **5 min 29 sec** | **26 sec** | [10/10 checks passed](docs/evidence/phase7-disaster-drill.md) |
+| First recovery drill | 7 min 15 sec | 19 min 38 sec | [Drill report](docs/evidence/phase6-recovery-drill.md) |
+| Project target | Within 30 min | Within 60 min | [Blueprint](docs/MASTER_BLUEPRINT.md) |
 
-Details: [SECURITY.md](docs/SECURITY.md).
+**RTO** measures the time from declaring an outage to verifying the restored system. **RPO** measures how far back the recovered data is from the time of the outage.
 
-## Quick start (local, no AWS needed)
+These are individual test runs on a small synthetic dataset, rather than production guarantees. The 26-second result used a backup taken just before the outage. Because off-site uploads require an operator session, actual data loss depends on the latest uploaded backup. See [limitations and next steps](docs/LESSONS-LEARNED.md#open-items-in-priority-order).
 
-```bash
+## Try it locally
+
+### Dashboard demo
+
+You need Git, Node.js, and npm. No AWS account is needed.
+
+```powershell
+git clone https://github.com/jervilangelo/bayanihan-dr.git
+cd bayanihan-dr/frontend
+npm ci
+npm run dev
+```
+
+Open [localhost:5173/bayanihan-dr/](http://localhost:5173/bayanihan-dr/) to explore the dashboard and simulated recovery.
+
+### Sample application and backups
+
+You also need Docker Desktop running. From the repository root:
+
+```powershell
 cd cooperative-system
-docker compose up -d --build --wait && docker compose exec -T api python -m app.seed   # CMS on 127.0.0.1:8000
-docker compose --profile backup up -d --build                                           # hourly verified backups
-cd ../frontend && npm ci && npm run dev        # demo dashboard: http://localhost:5173/bayanihan-dr/
-npm run dev:ops                                # operations mode: real local backups
+docker compose up -d --build --wait
+docker compose exec -T api python -m app.seed
+docker compose --profile backup up -d --build
 ```
 
-AWS setup, drills and real recoveries: [SETUP.md](docs/SETUP.md) and [RUNBOOK.md](docs/RUNBOOK.md).
+Open the sample application's [API documentation](http://localhost:8000/docs). The backup service creates and verifies backups every hour.
 
-## Tests
+To view real local backup status, run this in a second terminal from the repository root:
 
-| Suite | Count | Runs in |
+```powershell
+cd frontend
+npm ci
+npm run dev:ops
+```
+
+Real AWS recovery jobs also need the backend job runner and AWS configuration. Follow the [setup guide](docs/SETUP.md) and [operations runbook](docs/RUNBOOK.md) before running a drill.
+
+## Project structure
+
+| Folder | Purpose | Main tools |
 |---|---|---|
-| CMS (FastAPI + PostgreSQL) | pytest | CI, `docker compose --profile test run --rm -T tests` |
-| Backup engine (incl. corruption, truncation, tampering, missing manifests) | 41 | CI, `--profile backup-test` |
-| Job runner (state machine, plan guard, auth, origin/host checks) | 20 | CI, `backend/runner_tests` |
-| Terraform (`terraform test`, mocked provider) + TFLint + Trivy + ShellCheck | 16 | CI |
-| Dashboard unit (Vitest) | 45 | CI |
-| Dashboard e2e (Playwright: desktop + phone, axe, no external requests) | 50 | CI |
-| Live public site (Playwright) | 16 | after each deploy + weekly |
+| [`cooperative-system/`](cooperative-system/README.md) | Sample application: members, inventory, and ledger | FastAPI, PostgreSQL 16, Docker Compose |
+| [`backend/`](backend/README.md) | Backup verification, off-site uploads, and recovery jobs | Python |
+| [`terraform/`](terraform/README.md) | Standby infrastructure and temporary recovery resources | Terraform, AWS |
+| [`frontend/`](frontend/README.md) | Public demo and local operations dashboard | React, TypeScript, Vite |
+| [`docs/`](docs/README.md) | Setup, operations, design decisions, and drill evidence | Markdown |
 
-## Documentation
+## Security and cost
 
-Everything is indexed in **[docs/README.md](docs/README.md)**:
-- architecture, runbook, setup from scratch;
-- security, cost, lessons learned;
-- decisions (ADR-001 to ADR-016), changelog;
-- the original blueprint;
-- the timestamped evidence for every phase.
+- AWS access uses temporary credentials rather than long-lived access keys.
+- The office server's upload role can add backups, but cannot read or delete them.
+- Backups in S3 are encrypted and versioned.
+- The recovery server has no inbound ports; administration uses AWS Systems Manager.
+- Terraform plans are checked before the operator approves recovery.
+- CI runs without cloud credentials.
 
-All data in this project is synthetic. No real farmer, employee or financial records are used.
+At project completion on **5 November 2026**, all 10 phases were complete. The recorded standby environment kept backup storage and supporting AWS resources deployed, with no servers running. Recorded project compute spending was about **USD 0.01**, plus a small S3 charge. See the [cost breakdown](docs/COST.md) for assumptions and billing evidence, and the [security guide](docs/SECURITY.md) for controls and accepted risks.
+
+## Testing
+
+CI covers application and database rules, backup integrity and restore checks, recovery approvals, Terraform, and the dashboard. Browser tests cover desktop and phone layouts, accessibility, and external-request checks. The deployed public site also has scheduled checks.
+
+Find test commands in the [component guides](docs/README.md#component-guides) and recovery test results in the [evidence index](docs/README.md#drill-and-deployment-evidence).
+
+## Learn more
+
+- [Setup](docs/SETUP.md): build the full environment from scratch.
+- [Runbook](docs/RUNBOOK.md): run backups, drills, recovery, and teardown.
+- [Architecture](docs/ARCHITECTURE.md): understand the components and data flows.
+- [Lessons learned](docs/LESSONS-LEARNED.md): review limitations and improvements.
+- [All documentation](docs/README.md): find decisions, costs, security details, and evidence.

@@ -1,52 +1,69 @@
-# BayanihanDR documentation
+﻿# BayanihanDR documentation
 
-Start here when you come back to the project.
+BayanihanDR backs up a sample cooperative management system and restores it in AWS when the office server goes offline. Use this page to find the right guide.
 
-## Read first
+New to the project? Start with the [project overview and showcase](../README.md) for the live demo, recovery results, and local setup commands.
 
-| Document | When you need it |
+## Start here
+
+| I want to… | Read |
 |---|---|
-| [../README.md](../README.md) | What the project is, its status, the results, quick start |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | How the three systems fit together: diagrams, data flows, trust boundaries, repository map |
-| [RUNBOOK.md](RUNBOOK.md) | **Doing things:** daily checks, backups and off-site copies, drills, a real disaster recovery, teardown, troubleshooting |
-| [SETUP.md](SETUP.md) | Rebuilding everything from scratch on a new machine or AWS account |
+| Understand how the system works | [Architecture](ARCHITECTURE.md): components, diagrams, and data flows |
+| Set up the full project | [Setup guide](SETUP.md): a new machine or AWS account |
+| Run backups, drills, or recovery | [Operations runbook](RUNBOOK.md): steps, checks, teardown, and troubleshooting |
+| See limitations and next steps | [Lessons learned](LESSONS-LEARNED.md) |
 
-## Reference
+## Component guides
+
+Each component has its own setup and testing instructions.
+
+| Component | Guide |
+|---|---|
+| Sample cooperative application | [Run, seed, and test](../cooperative-system/README.md) |
+| Backup and recovery backend | [Backup engine and job runner](../backend/README.md) |
+| AWS infrastructure | [Terraform layout, resource lifecycles, and checks](../terraform/README.md) |
+| Dashboard | [Demo mode, local operations mode, and tests](../frontend/README.md) |
+
+## Design and reference
 
 | Document | Contents |
 |---|---|
-| [SECURITY.md](SECURITY.md) | Threat model, controls with evidence, accepted risks, incident first steps |
-| [COST.md](COST.md) | Verified prices, standby and drill costs, actual billing, budget alerts |
-| [LESSONS-LEARNED.md](LESSONS-LEARNED.md) | What worked, surprises, **open items in priority order** |
-| [DECISIONS.md](DECISIONS.md) | Architecture decision records ADR-001 to ADR-016, and the open-decision log |
-| [CHANGELOG.md](CHANGELOG.md) | What changed in each phase |
-| [MASTER_BLUEPRINT.md](MASTER_BLUEPRINT.md) | The original requirements (v1.0); the PDF is the unchanged baseline |
-| [aws/bayanihandr-developer-inline-policy.json](aws/bayanihandr-developer-inline-policy.json) | The operator permission set's inline policy |
+| [Security](SECURITY.md) | Threats, controls, accepted risks, and incident response |
+| [Cost](COST.md) | Recorded prices, billing evidence, standby and drill costs, and budget alerts |
+| [Design decisions](DECISIONS.md) | Architecture decisions and open questions |
+| [Changelog](CHANGELOG.md) | Changes made during each project phase |
+| [Original blueprint](MASTER_BLUEPRINT.md) | Initial requirements; the PDF is the unchanged baseline |
+| [Operator IAM policy](aws/bayanihandr-developer-inline-policy.json) | AWS permissions used by the operator |
 
-## Component READMEs
+## Drill and deployment evidence
 
-| Folder | README |
+These reports contain timestamped, sanitized records. RTO is the time taken to recover; RPO is the age of the recovered data at the time of the outage.
+
+| Phase | Report and result |
 |---|---|
-| `cooperative-system/` | [CMS: run, seed, test](../cooperative-system/README.md) |
-| `backend/` | [Backup engine and job runner](../backend/README.md) |
-| `terraform/` | [Infrastructure: layout, lifecycles, checks, state](../terraform/README.md) |
-| `frontend/` | [Dashboard: modes, scripts, tests](../frontend/README.md) |
+| 4 | [Plan review](evidence/phase4-plan-review.md): reviewed real infrastructure plans without applying changes |
+| 5 | [First deployment](evidence/phase5-deployment.md): resource inventory, cost checks, and off-site upload and read-back |
+| 6 | [First recovery drill](evidence/phase6-recovery-drill.md): recovery in 7 min 15 sec; data age of 19 min 38 sec |
+| 7 | [Test plan](evidence/phase7-test-plan.md) and [disaster drill](evidence/phase7-disaster-drill.md): 10/10 checks passed, recovery in 5 min 29 sec, data age of 26 sec, and a corrupted backup rejected |
+| 10 | [Final inventory and cost review](evidence/phase10-inventory.md): resource inventory, teardown plan review, and remaining charges |
 
-## Evidence (timestamped, sanitized)
+## Dashboard screenshots
 
-| Phase | Evidence |
+Public demo screenshots captured on 5 November 2026:
+
+| Overview | Backups |
 |---|---|
-| 4 | [Plan review](evidence/phase4-plan-review.md): real read-only plans, nothing applied |
-| 5 | [First deployment](evidence/phase5-deployment.md): pricing, guardrails, inventory, off-site upload and read-back |
-| 6 | [First recovery drill](evidence/phase6-recovery-drill.md): RTO 7:15, RPO 19:38 |
-| 7 | [Test plan](evidence/phase7-test-plan.md) and [disaster drill report](evidence/phase7-disaster-drill.md): **PASS 10/10**, RTO 5:29, RPO 0:26, corrupted backup refused |
-| 10 | [Inventory, destroy-plan review, residual billing](evidence/phase10-inventory.md) |
+| ![Dashboard overview](screenshots/overview-desktop.png) | ![Backup history](screenshots/backups-desktop.png) |
 
-## Screenshots (public demo, 2026-11-05)
-
-| | |
+| Recovery | Activity |
 |---|---|
-| ![Overview](screenshots/overview-desktop.png) | ![Backups](screenshots/backups-desktop.png) |
-| ![Recovery](screenshots/recovery-desktop.png) | ![Activity](screenshots/activity-desktop.png) |
+| ![Recovery workflow](screenshots/recovery-desktop.png) | ![Activity log](screenshots/activity-desktop.png) |
 
-Phone: [overview-phone.png](screenshots/overview-phone.png). Regenerate with `cd frontend && node scripts/screenshots.mjs`.
+See the [phone layout](screenshots/overview-phone.png) too.
+
+To regenerate screenshots, run these commands from the repository root:
+
+```powershell
+cd frontend
+node scripts/screenshots.mjs
+```
